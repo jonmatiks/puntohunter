@@ -1,7 +1,5 @@
 # PuntoHunter
 
-*Mine your way.*
-
 **Status: beta.** PuntoHunter runs pools on mainnet, but it is young: test a release on regtest before you
 run it, and expect changes between releases.
 

@@ -83,38 +83,45 @@ Core in Docker, real Stratum V1 and V2 clients, the Stratum V2 reference impleme
 the portal in headless Chrome:
 
 ```sh
-python3 -m venv .venv
-.venv/bin/pip install -r tests/e2e/requirements.txt
-docker compose -f tests/e2e/docker-compose.sri.yml build
-.venv/bin/pytest tests/e2e -n 4
+tests/e2e/run.sh
 ```
 
-* The suite builds the release binaries itself; `PUNTOHUNTER_BIN` names a pool binary to use instead. It
-  builds the regtest node's image on first use. Build the interop images first, as above: they take
-  minutes, longer than a test may wait.
-* Each test has 120 seconds ([pytest.ini](../../tests/e2e/pytest.ini)). `-n 4` runs four workers; CI runs
-  two.
+[run.sh](../../tests/e2e/run.sh) builds the release binaries and the Docker images first, since they take
+minutes, longer than a test may wait, then sets up `.venv` if it is missing and runs pytest with two workers.
+Any pytest argument goes on the end:
+
+| Command | What it runs |
+| --- | --- |
+| `tests/e2e/run.sh` | The default run, with 2 workers |
+| `tests/e2e/run.sh -n 4` | The same, with 4 workers |
+| `tests/e2e/run.sh tests/e2e/test_reports.py` | One file's tests alone |
+| `tests/e2e/run.sh tests/e2e/<file>::<test>` | One test alone |
+| `tests/e2e/run.sh -m load` | A marked group in place of the default run |
+| `E2E_JOBS=2 tests/e2e/run.sh` | The default run, with cargo building on 2 jobs, for a host that runs hot |
+
+* CI does not run the suite: run it yourself before you send a change.
+* Each test has 120 seconds ([pytest.ini](../../tests/e2e/pytest.ini)).
 * The default run leaves out two marked groups. `-m load` runs 1,000 simulated workers against a pool, and
   `-m hardware` checks a Bitaxe on your LAN against a running pool; each file's docstring gives its
   settings.
-* A test that fails under `-n` but passes alone, `pytest tests/e2e/<file>::<test>`, is likely timing on a
-  loaded machine; one that fails alone is a real failure.
+* A test that fails under `-n` but passes alone is likely timing on a loaded machine; one that fails alone
+  is a real failure.
 * [failpoint.rs](../../src/failpoint.rs) gives the crash-recovery tests points where the release binary
   stops or a commit fails, chosen by `PUNTOHUNTER_FAILPOINT`.
 
-Builds and parallel runs load every core; on a laptop, watch its temperature and use fewer jobs
-(`CARGO_BUILD_JOBS`) or workers if it runs hot.
+Builds and parallel runs load every core; on a laptop, watch its temperature and use fewer build jobs
+(`E2E_JOBS=2 tests/e2e/run.sh`, or `CARGO_BUILD_JOBS` for cargo alone) or workers if it runs hot.
 
 ## Before You Send a Change
 
-CI runs these on every pull request; run them first:
+CI runs all of these but the end-to-end suite on every pull request; run them all first:
 
 ```sh
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 npx markdownlint-cli2@0.23.2 "**/*.md"
-.venv/bin/pytest tests/e2e -n 4
+tests/e2e/run.sh
 ```
 
 ## Where Things Live

@@ -41,9 +41,9 @@ Keep one topic to a pull request. Say what it changes and why, and how you teste
   [CHANGELOG.md](../../CHANGELOG.md), under an `## Unreleased` heading, which the first change after a release
   adds, in the style of the entries there. A schema change gives the SQL that
   brings an existing database up to date.
-* **The checks.** Formatting, clippy, the tests, and markdownlint pass, as
-  [Before You Send a Change](development.md#before-you-send-a-change) lists; CI runs them on every pull
-  request.
+* **The checks.** Formatting, clippy, the tests, the end-to-end suite, and markdownlint pass, as
+  [Before You Send a Change](development.md#before-you-send-a-change) lists. CI runs all but the end-to-end
+  suite on every pull request; say in the pull request that you ran it, and how it went.
 * **The project's rules**, in [AGENTS.md](../../AGENTS.md). A change written with an AI agent is welcome and
   keeps the same rules; the agent reads them there.
 
