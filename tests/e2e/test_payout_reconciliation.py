@@ -43,7 +43,7 @@ def test_a_restored_backup_keeps_payouts_halted_and_a_clean_start_runs_them(
     pool.config["payouts"]["interval_secs"] = 0.5
     pool.start()
     wait_until(lambda: "payouts reconciled with the wallet and the chain" in pool.logs(), 10, "reconciled")
-    assert metric(pool, "puntohunter_payouts_halted") == 0
+    wait_until(lambda: metric(pool, "puntohunter_payouts_halted") == 0, 10, "payouts not halted")
     broadcast(pool)
     [batch] = confirm(pool, fresh_node)
     pool.kill()

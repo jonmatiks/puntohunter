@@ -88,12 +88,12 @@ rpcwhitelistdefault=0
 
 ## Building the Binary
 
-Install Rust with [rustup](https://rustup.rs) and a C compiler (on Debian or Ubuntu, `build-essential`):
+Install git, Rust with [rustup](https://rustup.rs), and a C compiler (on Debian or Ubuntu, `build-essential`):
 the build compiles SQLite and a TLS library from source. The code is Rust 2024 and uses `let` chains, so
 it needs Rust 1.89 or newer; the latest stable release is the one to use.
 
 ```sh
-git clone https://github.com/jonmatik/puntohunter.git
+git clone https://github.com/jonmatiks/puntohunter.git
 cd puntohunter
 cargo build --release --locked
 ```
@@ -148,9 +148,21 @@ first run.
 
 [config/regtest.toml](../../config/regtest.toml) runs every mode, pooled and hybrid payouts included,
 against a throwaway regtest chain. `tests/e2e/live.py up` starts that chain in Docker on the config's
-ports, with the wallets it needs; then run `puntohunter serve --config config/regtest.toml`, and stop the
-chain with `tests/e2e/live.py down`. The script needs Docker and the Python packages of
-`tests/e2e/requirements.txt`.
+ports, with the wallets it needs. It needs Docker with Compose and the Python packages of
+`tests/e2e/requirements.txt`, in a virtual environment (on Debian or Ubuntu, `python3-venv`):
+
+```sh
+python3 -m venv .venv
+.venv/bin/pip install -r tests/e2e/requirements.txt
+.venv/bin/python tests/e2e/live.py up
+target/release/puntohunter serve --config config/regtest.toml
+```
+
+Stop the pool with Ctrl-C and the chain with `.venv/bin/python tests/e2e/live.py down`. `live.py up` prints
+a regtest address for each role; a miner mines to one as `<address>.<worker>`. The config's share floor,
+`[vardiff] floor = 1.0`, suits a Bitaxe-class device; a CPU miner finds a share at it only every few minutes,
+so for one, lower it in a copy of the config, such as `floor = 0.000001`. Regtest's own block target is far
+easier than either, so every share a CPU miner sends at that floor is a block.
 
 ### Other Commands
 

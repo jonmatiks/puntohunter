@@ -78,8 +78,9 @@ def test_an_open_and_a_private_fleet_side_by_side_over_v1_and_v2(pool, regtest_c
     third = lookup(pool, f"{address}.rig", OTHER)
     assert third not in (None, opened, private)
     assert lookup(pool, f"{address}.rig") == opened
+    # Each connection's worker is recorded in its fleet just after it is authorized.
+    wait_until(lambda: names(fleet(pool, opened)) == ["open", "rig"], 10, "the plain worker in the open fleet")
     assert names(fleet(pool, private)) == ["rig", "rig2"], "neither merged into the protected worker"
-    assert names(fleet(pool, opened)) == ["open", "rig"]
 
     stats = wait_until(lambda: (s := pool.portal.api("/api/v1/stats").json)["hash_rates"] and s, 10, "the lists")
     rows = stats["hash_rates"] + stats["best_shares"]["round"]

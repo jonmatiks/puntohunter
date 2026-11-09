@@ -133,7 +133,12 @@ def test_the_worker_resource_shows_the_part_asked_and_paid(pool_factory, regtest
         (asked_handle, {"ppm": 1_000_000}, {"percent": 50}),
         (default_handle, None, {"percent": 33.33}),
     ]:
-        body = pool.portal.api(f"/api/v1/workers/{handle}").json
+        # A worker's part and its job are recorded just after it is authorized.
+        body = wait_until(
+            lambda: (body := pool.portal.api(f"/api/v1/workers/{handle}").json)["finder_sats"] is not None and body,
+            10,
+            "the worker's job recorded",
+        )
         [(_, finder_sats), *_] = pool.reward_outputs(reward, finder, pool="split", finder=clamped)
         assert (body["part"], body["finder_sats"]) == (part, finder_sats), handle
     # A pool without personal lets no worker choose a part, so the app shows none.

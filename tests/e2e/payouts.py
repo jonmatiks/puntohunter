@@ -129,5 +129,6 @@ def health(pool):
 
 
 def metric(pool, name):
-    line = next(line for line in pool.metrics().splitlines() if line.startswith(f"{name} "))
-    return float(line.split()[1])
+    """The metric's value, or None before the pool exports it."""
+    line = next((line for line in pool.metrics().splitlines() if line.startswith(f"{name} ")), None)
+    return None if line is None else float(line.split()[1])

@@ -10,11 +10,21 @@ change, and the [architecture pages](architecture/README.md) explain how the cod
 | --- | --- |
 | Rust, stable, with `rustfmt` and `clippy` | Building and the Rust tests. The crate uses edition 2024. |
 | Docker with Compose | The end-to-end suite and a local regtest chain: Bitcoin Core runs in containers. |
-| Python 3.14 | The end-to-end suite, in a virtual environment with the pinned packages of [requirements.txt](../../tests/e2e/requirements.txt). |
+| Python 3.14 or newer | The end-to-end suite, in a virtual environment with the pinned packages of [requirements.txt](../../tests/e2e/requirements.txt). Some of its tests fail on older releases. |
 | Google Chrome | The browser suite, which drives the portal's pages headless with the host's own Chrome. |
 | Node.js | `markdownlint-cli2`, run with `npx`. |
 
-CI runs on Ubuntu 24.04, and the suite is developed on Linux.
+CI runs on Ubuntu 24.04, and the suite is developed on Linux. Ubuntu 24.04's own Python is 3.12; the
+[deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa) has 3.14:
+
+```sh
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt install python3.14 python3.14-venv
+```
+
+Then run the suite with `E2E_PYTHON=python3.14` the first time, as under [Tests](#tests). Once `.venv`
+exists, Playwright, one of its packages, installs Chrome and what it needs on Debian or Ubuntu:
+`sudo .venv/bin/playwright install --with-deps chrome`.
 
 ## Building
 
@@ -44,7 +54,9 @@ and prints the chain's tip and a regtest address for each role. Every `up` start
 * **A miner** connects over Stratum V1 to `stratum+tcp://<this host>:3333` (solo), `4333` (pooled), or
   `5333` (hybrid), with the username `<address>.<worker>`, the address one that `live.py up` printed. V2
   listens one port above each, and the pool logs the authority key a V2 miner pins on the line
-  `SV2 authority key`. Regtest's difficulty is so low that any CPU miner finds blocks.
+  `SV2 authority key`. The config's share floor, `[vardiff] floor = 1.0`, suits a Bitaxe-class device;
+  for a CPU miner, lower it in a copy of the config, such as `floor = 0.000001`, and every share it sends is
+  a block, since regtest's block target is easier still.
 * **A block** to move the chain without a miner, which gives miners a new template:
 
   ```sh
@@ -86,9 +98,10 @@ the portal in headless Chrome:
 tests/e2e/run.sh
 ```
 
-[run.sh](../../tests/e2e/run.sh) builds the release binaries and the Docker images first, since they take
-minutes, longer than a test may wait, then sets up `.venv` if it is missing and runs pytest with two workers.
-Any pytest argument goes on the end:
+[run.sh](../../tests/e2e/run.sh) checks for Python 3.14, builds the release binaries and the Docker images
+first, since they take minutes, longer than a test may wait, then sets up `.venv` if it is missing and runs
+pytest with two workers. `E2E_PYTHON` names the Python that makes `.venv` where `python3` is older, such as
+`E2E_PYTHON=python3.14 tests/e2e/run.sh`. Any pytest argument goes on the end:
 
 | Command | What it runs |
 | --- | --- |

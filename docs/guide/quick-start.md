@@ -28,7 +28,7 @@ a user and password, so nothing else needs setting on the node.
 ## Build
 
 ```sh
-git clone https://github.com/jonmatik/puntohunter.git
+git clone https://github.com/jonmatiks/puntohunter.git
 cd puntohunter
 cargo build --release
 ```

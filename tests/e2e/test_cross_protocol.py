@@ -117,6 +117,12 @@ def test_a_forced_block_is_recorded_alike_over_either_protocol(pinned, pair, reg
         paid = [(o["scriptPubKey"].get("address"), sats(o["value"])) for o in vout]
         return row["pool"], row["status"], reward, paid
 
+    # The lifecycle sets each status after the node's answer is recorded.
+    wait_until(
+        lambda: {pinned.block(block).get("status") for block in (v1_block, v2_block)} == {"confirmed_immature"},
+        10,
+        "both blocks on the chain",
+    )
     v1_mode, v1_status, v1_reward, v1_paid = recorded(v1_block)
     v2_mode, v2_status, v2_reward, v2_paid = recorded(v2_block)
     assert (v1_mode, v1_status) == (v2_mode, v2_status) == ("solo", "confirmed_immature")

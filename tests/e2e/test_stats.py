@@ -201,7 +201,9 @@ def test_miner_types_fold_past_their_length_and_sum_to_the_connected(pool_factor
     assert body["miners"][-1]["miner"] is None and body["miners"][-2]["miner"] is None
     connected = sum(setup["devices"] for setup in pool.portal.api("/api/v1/pool").json["pools"])
     assert sum(row["workers"] for row in body["miners"]) == connected == len(agents)
-    assert pool.rows("SELECT handle FROM fleets WHERE vendor = 'NerdQAxe++'"), "recorded with its '+'"
+    wait_until(
+        lambda: pool.rows("SELECT handle FROM fleets WHERE vendor = 'NerdQAxe++'"), 10, "recorded with its '+'"
+    )
     assert body["limits"]["miner_types"] == 5, "the first 5 by hashrate"
     for miner in miners:
         miner.client.close()

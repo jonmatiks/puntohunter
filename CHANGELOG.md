@@ -1,5 +1,14 @@
 # PuntoHunter
 
+## Unreleased
+
+* docs: from a run of the guide on a clean Ubuntu 24.04: the installation page gives the commands for trying
+  the pool on regtest, its Python environment included, and both it and the development page say that a CPU
+  miner needs a lower `[vardiff] floor` than the regtest config's 1.0. The development page says how to get
+  Python 3.14 and Chrome on Ubuntu 24.04
+* test: `tests/e2e/run.sh` refuses a Python older than 3.14, which the suite needs, and `E2E_PYTHON` names the
+  one that makes `.venv`; five tests that read the pool's records before it wrote them now wait for them
+
 ## [0.2.0] 2026-11-09
 
 The first public release. What it ships, by area:
