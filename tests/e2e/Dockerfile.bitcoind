@@ -1,0 +1,29 @@
+# Regtest bitcoind for the e2e suite and live regtest runs: the Bitcoin Core
+# release tarball, checked against the release SHA256SUMS before it is unpacked, on a base image pinned by
+# digest. The SHA256SUMS file is itself pinned by hash, so a changed file fails the build too.
+
+ARG BASE=debian:trixie-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a
+
+FROM ${BASE} AS fetch
+ARG VERSION=32.1
+ARG ARCH=x86_64-linux-gnu
+ARG SUMS_SHA256=8efe242e99fe85d96f6a564a14e41eae6ab903736f0732af4d6c00bf1d92534d
+ARG RELEASE_URL=https://bitcoincore.org/bin/bitcoin-core-${VERSION}
+# Overridable only so a test can feed in a tarball that does not match SHA256SUMS.
+ARG TARBALL_URL=${RELEASE_URL}/bitcoin-${VERSION}-${ARCH}.tar.gz
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /fetch
+RUN curl -fsSL -o SHA256SUMS "${RELEASE_URL}/SHA256SUMS" \
+    && echo "${SUMS_SHA256}  SHA256SUMS" | sha256sum --check --strict - \
+    && curl -fsSL -o "bitcoin-${VERSION}-${ARCH}.tar.gz" "${TARBALL_URL}" \
+    && sha256sum --check --strict --ignore-missing SHA256SUMS \
+    && tar -xzf "bitcoin-${VERSION}-${ARCH}.tar.gz" --strip-components=2 \
+        "bitcoin-${VERSION}/bin/bitcoind" "bitcoin-${VERSION}/bin/bitcoin-cli"
+
+FROM ${BASE}
+COPY --from=fetch /fetch/bitcoind /fetch/bitcoin-cli /usr/local/bin/
+RUN useradd --system --create-home bitcoin
+USER bitcoin
+ENTRYPOINT ["bitcoind"]

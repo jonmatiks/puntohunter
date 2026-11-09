@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--#include head.html -->
+<title>Blocks · {{name}}</title>
+<script type="module" src="/js/pages/blocks.js"></script>
+</head>
+<body>
+<!--#include header.html -->
+<main>
+<!--#include outage.html -->
+
+<!-- The blocks the pool found (API reference section 2.8). js/pages/blocks.js fills the table from the
+     pool's blocks resource, and again when the chain tip moves; js/bind.js lists what each data-* attribute
+     does. -->
+
+<h1>Blocks</h1>
+<p>The blocks the pool found, newest first. A block is mature once 100 more blocks bury it.</p>
+<noscript><p>This page needs JavaScript: it reads the pool's figures live from its API.</p></noscript>
+
+<div class="wide" id="blocks">
+  <p class="muted" data-if="loading">Loading…</p>
+  <p class="muted" data-if="none" hidden>No blocks yet.</p>
+  <p class="muted" data-if="failed" hidden>The blocks cannot be read right now.</p>
+  <div class="scroll" data-if="blocks" hidden>
+    <table>
+      <thead>
+        <tr>
+          <th>Height</th><th>Status</th><th>Pool</th><th>Finder</th><th>Miner</th>
+          <th>To finder, BTC</th><th>To pool, BTC</th><th>Allocated, BTC</th><th>Maturity</th><th>Hash</th>
+        </tr>
+      </thead>
+      <tbody data-each="blocks">
+        <template>
+          <tr>
+            <td data-bind="height"></td>
+            <td data-bind="status" data-format="blockStatus"></td>
+            <td><span data-bind="pool" data-format="pool"></span><span data-if="transport"> · <span data-bind="transport"></span></span></td>
+            <!-- The finder by its handle: the pool sends no worker's name with a block. -->
+            <td><a class="hash" data-if="finder" data-href="/worker.html#{finder}" data-bind="finder"></a><span data-if="!finder">–</span></td>
+            <td data-bind="miner"></td>
+            <td data-bind="finder_sats" data-format="btc"></td>
+            <td data-bind="pool_sats" data-format="btc"></td>
+            <td data-bind="allocated_sats" data-format="btc"></td>
+            <td data-bind="blocks_to_maturity" data-format="maturity"></td>
+            <td class="hash" data-bind="hash" data-format="shortHash" data-title="hash"></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+<!--#include footer.html -->
+</body>
+</html>

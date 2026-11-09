@@ -1,0 +1,212 @@
+# puntohunter on mainnet: `puntohunter serve --config config/mainnet.toml`.
+# Every address the pool pays lives here, never in code.
+
+network = "main"
+
+[node]
+rpc_url = "http://127.0.0.1:8332"
+cookie_file = "/var/lib/bitcoind/.cookie"
+zmq_hashblock = "tcp://127.0.0.1:28332"
+rpc_timeout_secs = 10.0
+longpoll_timeout_secs = 120.0
+# How long a node may stay a block or more behind the others before it is stuck, and how long a node out of
+# a fault must pass its checks before it sources templates again. Both apply to every node.
+# stuck_secs = 30.0
+# recovery_secs = 60.0
+
+# The other nodes of the fleet, each a [[secondary_nodes]] entry. `name`, 1 to 32
+# lower-case letters, digits, and '-', never `primary`, labels its logs and metrics. Credentials as [node]
+# takes them, or rpc_user with rpc_password_file, a file only its owner can read. The timeouts default to
+# [node]'s. Without any, [node] is the whole fleet.
+#
+# [[secondary_nodes]]
+# name = "eu"
+# rpc_url = "http://198.51.100.2:8332"
+# rpc_user = "puntohunter"
+# rpc_password_file = "/opt/puntohunter/config/eu.password"
+# zmq_hashblock = "tcp://198.51.100.2:28332"
+
+# One entry per pool, in the order the portal lists them. A pool's `id`, 1 to 32
+# lower-case letters, digits, and '-', keys its blocks, balances, PPLNS window, and worker handles: changing it
+# starts a new pool, and the old id's blocks and balances carry on. `name` is what the portal calls it.
+#
+# `v1` and `v2` are its Stratum V1 and V2 listen addresses; a protocol left out has no listener. `public_v1`
+# and `public_v2` set the ports miners reach, when a proxy or port forward differs from the listener's.
+#
+# `finder` is what a block's finder is paid of its reward, capped at the miner portion; the pool wallet takes
+# the rest, shared by work among the pool's miners. It takes `percent` of the reward, from 0 to 100,
+# or a fixed amount as `btc` or `sats`, 0 or at least 0.0000033 BTC; a fixed amount does not halve with the
+# subsidy. A percent below 100 must leave the pool output something beside the fees.
+#
+# A pool may set `fees`, `[[pools.fees]]` entries as `[[fees]]` below takes them, in place of the global ones;
+# `fees = []` for none. It may set its own PPLNS window under `[pools.accounting]`: `window_multiplier` and
+# `window_min_work`, each falling back to `[accounting]` below.
+
+# Solo: the finder is paid the whole reward after fees, in the block's coinbase.
+[[pools]]
+id = "solo"
+name = "Solo"
+v1 = "0.0.0.0:3333"
+v2 = "0.0.0.0:3334"
+finder = { percent = 100 }
+
+# Pooled: every block's reward after fees is shared by work.
+[[pools]]
+id = "pooled"
+name = "Pooled"
+v1 = "0.0.0.0:4333"
+v2 = "0.0.0.0:4334"
+finder = { percent = 0 }
+
+# Hybrid: the finder is paid a third of each block's reward, which keeps its proportions
+# across halvings, and the rest is shared by work.
+[[pools]]
+id = "hybrid"
+name = "Hybrid"
+v1 = "0.0.0.0:5333"
+v2 = "0.0.0.0:5334"
+finder = { percent = 33.33 }
+
+[stratum]
+# A connection that has not authorized (V1) or opened a channel (V2) by then is closed. Miners do either
+# within a second of connecting.
+authorize_timeout_secs = 60.0
+
+[metrics]
+bind = "127.0.0.1:9100"
+
+[portal]
+# Plain HTTP on every interface; let the firewall admit only the networks that need it.
+bind = "0.0.0.0:8080"
+# Username lookups each client address may make a minute.
+lookups_per_minute = 30
+# The API's event streams each client address may hold open, and the pool in all.
+streams_per_ip = 20
+max_streams = 2000
+# Days an offline device stays on its fleet's page.
+keep_offline_days = 7
+# Behind a reverse proxy, its address: the only peer whose X-Forwarded-For names the client. Unset without
+# one.
+# trusted_proxy = "127.0.0.1"
+# The portal's brand, as web/build.py's --site and --overlay take it: a site.json with its name and
+# description, and a directory laid over web/src/ whose files replace the app's or are added, such as logo.png.
+# Unset, PuntoHunter's own.
+# site = "/opt/puntohunter/site/site.json"
+# overlay = "/opt/puntohunter/site/overlay"
+
+# [api]
+# The origins whose browser pages may call /api/v1, each exactly; none by default, so the API is same-origin
+# only.
+# allowed_origins = ["https://dashboard.partner.example"]
+
+[public]
+# Where miners connect, as the overview's connection settings give it. `host` is a domain name or an IP
+# address; without it the overview names the host the browser used.
+# host = "pool.example.com"
+
+[vardiff]
+# A floor of 1 on mainnet; a floor below 1 is accepted.
+floor = 1.0
+ceiling = 1_000_000.0
+share_interval_secs = 10.0
+
+[telemetry]
+# Each rollup row covers a minute. The e2e harness shortens it, so rollup tests wait seconds.
+rollup_secs = 60
+
+[addresses]
+# The pool wallet, which takes the pool output of every pooled and hybrid block. This one is BIP 173's example
+# address, whose key is public: replace it with an address of your own wallet before mining. A pooled block
+# allocates its pool output to its window, but this file sets no [payouts], so nothing pays it out.
+pool_wallet = "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"
+
+[coinbase]
+# Every coinbase's scriptSig carries the tag after the block height; block explorers show it as the pool's
+# name. Up to 32 printable ASCII characters; /puntohunter/ when unset.
+tag = "/puntohunter/"
+# Whether the tag is followed by "Mined by <worker>/", the worker name after the address's dot, cut to 32
+# characters. Worker names then sit on the chain for good, so this is off unless set.
+worker_names = false
+# Whether it is for each worker that adds +name to its username, such as <address>.<worker>+name; never beside
+# worker_names. A pool may set either under its own [pools.coinbase].
+worker_names_opt_in = false
+
+# The fee outputs each coinbase carries after the miner portion, in this order, unless its pool sets its own.
+# Each takes `percent` of the block's whole reward, rounded down to the satoshi, or a fixed amount
+# as `btc` or whole `sats`, such as `btc = 0.01`; each is capped at what the fees before it leave, and the
+# miner portion takes the rest. A fixed amount does not halve with the subsidy, so it is a larger share of
+# every reward after each halving. Add as many as needed, or none at all to give the miner the whole reward.
+# Each output adds about 31 bytes to the coinbase, which the node leaves only a little room for, so keep the
+# list short.
+
+# [[fees]]
+# name = "operator"
+# address = "bc1q…"
+# percent = 0.9
+
+# [[fees]]
+# name = "partner"
+# address = "bc1q…"
+# percent = 0.6
+
+[accounting]
+# The PPLNS window of each block with a pool output: its pool output is shared among the last
+# max(window_multiplier × network difficulty, window_min_work) of accepted work, in difficulty-1 units: twice
+# the network difficulty, with no floor. A change applies to jobs issued after the restart that makes it.
+window_multiplier = 2.0
+window_min_work = 0.0
+# Blocks beyond coinbase maturity (100) before a block's allocations become available balances.
+maturity_buffer = 0
+
+# No [payouts]: this config pays nothing out. A mainnet [payouts] sets confirmation_target in place of
+# regtest's fee_rate (see config/regtest.toml).
+
+# The group this instance belongs to: other instances on hosts and domains of their own,
+# each a [[group.members]] entry. Every refresh_secs (30 by default) each member's GET /api/v1/pool is read,
+# and the overview and GET /api/v1/group add their figures to this instance's, as totals alone. `name` heads
+# the overview's card. A member's `name`, 1 to 32 lower-case letters, digits, and '-', labels its logs and
+# metric, never a page; its `url` is an origin, with no path. Without [group], the overview shows no group.
+# With show_members (false by default), the card lists each instance by its `label`, 1 to 32 characters of
+# public text required on [group], for this instance, and on every member; a member's optional `link`, an
+# origin, makes its label a link to that portal. A member's `name` and `url` are never shown.
+#
+# [group]
+# name = "PuntoHunter Group"
+# label = "Home"
+# show_members = true
+#
+# [[group.members]]
+# name = "east"
+# url = "https://east.example.com"
+# label = "US East"
+# link = "https://east.example.com"
+
+# The IP-to-country database the stats page counts connected workers by country from:
+# a MaxMind DB file, such as DB-IP's IP to Country Lite (CC BY 4.0, monthly, no account) or MaxMind's
+# GeoLite2 Country. It is reopened when it changes, checked hourly. Without [geo], the page has no countries.
+# With min_workers above 1 (1 by default), a country with fewer connected workers counts as "Elsewhere", so no
+# row shows one worker's hashrate beside where it is.
+#
+# [geo]
+# database = "/opt/puntohunter/geo/dbip-country-lite.mmdb"
+# min_workers = 3
+
+# How many rows each list of the stats page and GET /api/v1/stats shows, each 10 by default. The miner types
+# and the countries past theirs fold into "Other" and "Elsewhere". A fleet's ranks count every fleet.
+#
+# [stats]
+# best_shares_round = 10
+# best_shares_24h = 10
+# hash_rates = 10
+# miner_types = 10
+# countries = 10
+
+# Snapshots of the database: one every interval_secs, 900 by default, and one at
+# once after a block with a pool output is allocated or a payout batch is broadcast, written with VACUUM INTO
+# into dir, relative to data_dir, `backups` by default, as puntohunter-<Unix milliseconds>.sqlite3. The newest
+# keep, 96 by default, a day at the default interval, are kept. Other hosts pull them; to restore, stop the
+# pool and copy one over the database, keeping handle.key. Without [backup], no snapshot is taken.
+[backup]
+# dir = "backups"
+# interval_secs = 900
+# keep = 96

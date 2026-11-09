@@ -1,0 +1,21 @@
+# The pool's systemd unit, as /etc/systemd/system/puntohunter.service. deploy.sh restarts it. It runs as the
+# puntohunter user, in the bitcoin group so it can read the node's RPC cookie, with the config at
+# /opt/puntohunter/config/pool.toml.
+[Unit]
+Description=PuntoHunter mining pool
+After=network-online.target bitcoind.service
+Wants=network-online.target bitcoind.service
+
+[Service]
+User=puntohunter
+Group=puntohunter
+SupplementaryGroups=bitcoin
+WorkingDirectory=/opt/puntohunter
+ExecStart=/opt/puntohunter/puntohunter serve --config /opt/puntohunter/config/pool.toml
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+CPUWeight=200
+
+[Install]
+WantedBy=multi-user.target

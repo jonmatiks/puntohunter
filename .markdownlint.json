@@ -1,0 +1,25 @@
+{
+  // House style for PuntoHunter Markdown. Each entry below is a deliberate departure
+  // from a markdownlint default; anything not listed here is left at its default and
+  // is expected to lint clean. See AGENTS.md -> "Formatting".
+  "default": true,
+
+  // MD013 line-length: prose targets ~100 columns, and 110 leaves headroom so an
+  // occasional long sentence does not force a whole paragraph to be reflowed.
+  // Tables are exempt because the guide's reference tables, such as the config keys,
+  // genuinely need the width, and code blocks are exempt because they hold
+  // configuration samples and stratum wire traces that break if wrapped.
+  "MD013": {
+    "line_length": 110,
+    "tables": false,
+    "code_blocks": false
+  },
+
+  // MD060 table-column-style: pinned to "compact" rather than left at "any" so the
+  // delimiter-row convention is enforced, not inferred from whichever style a given
+  // table happens to be closest to. Compact is "| --- | :---: | --- |" with a single
+  // space around every cell, which is the form AGENTS.md mandates.
+  "MD060": {
+    "style": "compact"
+  }
+}

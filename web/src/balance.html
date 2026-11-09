@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--#include head.html -->
+<title>Balance · {{name}}</title>
+<script type="module" src="/js/pages/balance.js"></script>
+</head>
+<body>
+<!--#include header.html -->
+<main>
+<!--#include outage.html -->
+
+<!-- The private balance (API reference section 2.9): the token the operator gave opens what an address is
+     owed in each pool. js/pages/balance.js sends it to the pool in a request header, never in a URL, keeps
+     none of it, and fills the result; js/bind.js lists what each data-* attribute does. -->
+
+<h1>Balance</h1>
+<noscript><p>This page needs JavaScript: it reads the pool's figures live from its API.</p></noscript>
+
+<section class="card">
+  <form id="balance-form">
+    <input type="password" name="token" placeholder="Balance token" aria-label="Balance token" required
+           autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+    <button type="submit">Show balance</button>
+  </form>
+  <!-- One answer at a time, by the pool's error code. -->
+  <div id="balance-answer" role="status">
+    <p class="error" data-if="unauthorized" hidden>That token opens no balance. Check it is the one the operator gave you.</p>
+    <p class="error" data-if="unreachable" hidden>The pool cannot be reached right now. Try again in a minute.</p>
+  </div>
+  <p class="muted">The balance token the operator gave you shows what your address is owed. It goes to the pool in a request header, never in the page's address, and this browser does not keep it.</p>
+</section>
+
+<section class="card" id="balance-result" hidden>
+  <h2>Your Balance</h2>
+  <p class="muted" data-if="!pools">Nothing yet: no block has credited this address.</p>
+  <div class="scroll" data-if="pools">
+    <table>
+      <thead>
+        <tr><th>Pool</th><th>Pending, BTC</th><th>Available, BTC</th><th>Reserved, BTC</th><th>Paid, BTC</th></tr>
+      </thead>
+      <tbody data-each="pools">
+        <template>
+          <tr>
+            <td data-bind="pool" data-format="pool"></td>
+            <td data-bind="pending_sats" data-format="btc"></td>
+            <td data-bind="available_sats" data-format="btc"></td>
+            <td data-bind="reserved_sats" data-format="btc"></td>
+            <td data-bind="paid_sats" data-format="btc"></td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Pending: credited from blocks whose reward is not yet spendable. Available: paid once it reaches the payout threshold, every pool's together. Reserved: in a payout on its way. Paid: confirmed on the chain.</p>
+</section>
+
+</main>
+<!--#include footer.html -->
+</body>
+</html>

@@ -1,0 +1,30 @@
+# A Cloudflare Tunnel to the portal, as /etc/cloudflared/config.yml on the pool host. cloudflared dials out,
+# so the host opens no web port, and its requests reach the portal from loopback, where [portal] trusted_proxy
+# trusts their X-Forwarded-For. A named tunnel, since quick tunnels do not carry the portal's live streams.
+# Replace pool.example.com and example.com with your own names, and <tunnel id> with the tunnel's.
+#
+# Once, on the pool host, as root:
+#   cloudflared tunnel login                    # opens a browser link; pick your zone
+#   cloudflared tunnel create puntohunter       # writes ~/.cloudflared/<tunnel id>.json
+#   install -d -m 700 /etc/cloudflared
+#   install -m 600 ~/.cloudflared/<tunnel id>.json /etc/cloudflared/
+#   install -m 644 cloudflared.yml /etc/cloudflared/config.yml   # this file, its names filled in
+#   cloudflared tunnel --config /etc/cloudflared/config.yml ingress validate
+#   cloudflared tunnel route dns puntohunter pool.example.com
+#   cloudflared service install && systemctl enable --now cloudflared
+#
+# The second rule serves a website of your own its API: example.com is a proxied record for the tunnel, a
+# Worker serves the website on the route example.com/*, and the route example.com/api/*, with no Worker,
+# leaves the API to the rule below. Drop it when the portal is the only site.
+tunnel: <tunnel id>
+credentials-file: /etc/cloudflared/<tunnel id>.json
+
+ingress:
+  # The embedded portal, every path: its pages, its live streams, and its API.
+  - hostname: pool.example.com
+    service: http://127.0.0.1:8080
+  # A website's API. The rest of example.com is the Worker's, on the route example.com/*.
+  - hostname: example.com
+    path: ^/api/
+    service: http://127.0.0.1:8080
+  - service: http_status:404

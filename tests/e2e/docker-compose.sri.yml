@@ -1,0 +1,40 @@
+# The SRI reference roles for the interop tests (test_sri_interop.py), from sv2-apps v0.8.0. They share the
+# host's network, as the pool under test runs on the host with its listeners on loopback. Each test starts
+# them under its own project name:
+#   SRI_CONFIG_DIR=<dir> docker compose -p <name> -f tests/e2e/docker-compose.sri.yml up -d translator
+# Build both images once, before a run: docker compose -f tests/e2e/docker-compose.sri.yml build
+
+services:
+  translator:
+    build:
+      context: .
+      dockerfile: Dockerfile.sri
+      target: translator
+    image: puntohunter-sri-translator:0.8.0
+    network_mode: host
+    environment:
+      - RUST_LOG
+    volumes:
+      - ${SRI_CONFIG_DIR:-.}:/config:ro
+    command: [--config, /config/translator.toml]
+
+  mining-device:
+    build:
+      context: .
+      dockerfile: Dockerfile.sri
+      target: mining-device
+    image: puntohunter-sri-mining-device:0.8.0
+    network_mode: host
+    environment:
+      - RUST_LOG
+    command:
+      - --address-pool=127.0.0.1:${POOL_PORT:-3334}
+      - --pubkey-pool=${AUTHORITY_KEY:-}
+      - --id-user=${USER_IDENTITY:-}
+      # Microseconds between hashes. On regtest about half of all shares are blocks, so a CPU miner at full
+      # speed would flood the chain.
+      - --handicap=${HANDICAP:-200000}
+      - --cores=1
+      # It claims its measured CPU rate, and the pool sizes the first target from the claim. Claiming
+      # nothing starts it at the harness floor, where its throttled hashes find shares.
+      - --nominal-hashrate-multiplier=0

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--#include head.html -->
+<title>Stats · {{name}}</title>
+<script type="module" src="/js/pages/stats.js"></script>
+</head>
+<body>
+<!--#include header.html -->
+<main>
+<!--#include outage.html -->
+
+<!-- The pool's stats, from GET /api/v1/stats (API reference section 2.12), filled again every 30 s. A fleet
+     shows by its address's first and last characters only, as the pool cuts it, and links nowhere.
+     js/pages/stats.js shows one data-state at a time and fills the data-bind fields; js/bind.js lists what
+     each data-* attribute does. Text and layout are free to change. -->
+
+<h1>Stats</h1>
+<p class="muted" data-state="loading">Loading…</p>
+<noscript><p>This page needs JavaScript: it reads the pool's figures live from its API.</p></noscript>
+
+<div data-state="failed" hidden>
+  <p class="muted">The stats cannot be read right now. Try again in a minute.</p>
+</div>
+
+<div data-state="ready" hidden>
+  <section class="card">
+    <h2>Round</h2>
+    <dl>
+      <dt>Since</dt>
+      <dd data-if="round.started_at"><time data-bind="round.started_at" data-format="local" data-title="round.started_at|utc" data-datetime="round.started_at|iso"></time>, <span data-bind="round.started_at" data-format="elapsed"></span> ago<span data-if="round.since_block">, block <span data-bind="round.since_block"></span></span></dd>
+      <dd data-if="!round.started_at">no shares yet</dd>
+      <dt>Connected</dt>
+      <dd><span data-bind="workers"></span> <span data-if="workers=1">worker</span><span data-if="!workers=1">workers</span> in <span data-bind="fleets"></span> <span data-if="fleets=1">fleet</span><span data-if="!fleets=1">fleets</span></dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Hashrates</h2>
+    <div class="scroll">
+      <p class="muted" data-if="!hash_rates">No workers connected.</p>
+      <table data-if="hash_rates">
+        <thead>
+          <tr><th>#</th><th>Address</th><th>Hashrate, 10 min</th><th>Workers</th></tr>
+        </thead>
+        <tbody data-each="hash_rates">
+          <template>
+            <tr>
+              <td data-bind="rank"></td>
+              <td class="hash"><span data-if="short_address" data-bind="short_address"></span><span class="muted" data-if="!short_address">private fleet</span></td>
+              <td><span data-if="!estimating" data-bind="hash_rate" data-format="hashRate"></span><span class="muted" data-if="estimating" title="Every worker is still filling its 10-minute window"><span data-bind="hash_rate" data-format="hashRate"></span>, estimating</span></td>
+              <td data-bind="workers"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- The two best-share lists: each fleet's best this round, and over the last 24 hours. -->
+  <section class="card">
+    <h2>Best Shares, This Round</h2>
+    <div class="scroll">
+      <p class="muted" data-if="!best_shares.round">No shares yet this round.</p>
+      <table data-if="best_shares.round">
+        <thead>
+          <tr><th>#</th><th>Address</th><th>Best share</th><th>Miner</th><th>Pool</th><th>When</th></tr>
+        </thead>
+        <tbody data-each="best_shares.round">
+          <template>
+            <tr>
+              <td data-bind="rank"></td>
+              <td class="hash"><span data-if="short_address" data-bind="short_address"></span><span class="muted" data-if="!short_address">private fleet</span></td>
+              <td data-bind="best" data-format="difficulty"></td>
+              <td data-bind="miner"></td>
+              <td data-bind="pool" data-format="pool"></td>
+              <td><time data-bind="at" data-format="local" data-title="at|utc" data-datetime="at|iso"></time></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Best Shares, Last 24 Hours</h2>
+    <div class="scroll">
+      <p class="muted" data-if="!best_shares.last_24h">No shares in the last 24 hours.</p>
+      <table data-if="best_shares.last_24h">
+        <thead>
+          <tr><th>#</th><th>Address</th><th>Best share</th><th>Miner</th><th>Pool</th><th>When</th></tr>
+        </thead>
+        <tbody data-each="best_shares.last_24h">
+          <template>
+            <tr>
+              <td data-bind="rank"></td>
+              <td class="hash"><span data-if="short_address" data-bind="short_address"></span><span class="muted" data-if="!short_address">private fleet</span></td>
+              <td data-bind="best" data-format="difficulty"></td>
+              <td data-bind="miner"></td>
+              <td data-bind="pool" data-format="pool"></td>
+              <td><time data-bind="at" data-format="local" data-title="at|utc" data-datetime="at|iso"></time></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Miner Types</h2>
+    <div class="scroll">
+      <p class="muted" data-if="!miners">No workers connected.</p>
+      <table data-if="miners">
+        <thead>
+          <tr><th>Miner</th><th>Workers</th><th>Hashrate</th><th>Best this round</th></tr>
+        </thead>
+        <tbody data-each="miners">
+          <template>
+            <tr>
+              <td><span data-if="miner" data-bind="miner"></span><span data-if="kind=other">Other</span><span data-if="kind=unknown">Unknown</span></td>
+              <td data-bind="workers"></td>
+              <td data-bind="hash_rate" data-format="hashRate"></td>
+              <td data-bind="best" data-format="difficulty"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Shown only when the pool reads a country database ([geo]). -->
+  <section class="card" data-if="geo">
+    <h2>Countries</h2>
+    <div class="scroll">
+      <p class="muted" data-if="!countries">No workers connected.</p>
+      <table data-if="countries">
+        <thead>
+          <tr><th>Country</th><th>Workers</th><th>Hashrate</th></tr>
+        </thead>
+        <tbody data-each="countries">
+          <template>
+            <tr>
+              <td><span data-if="name" data-bind="name"></span><span data-if="kind=elsewhere">Elsewhere</span><span data-if="kind=unknown">Unknown</span></td>
+              <td data-bind="workers"></td>
+              <td data-bind="hash_rate" data-format="hashRate"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+</main>
+<!--#include footer.html -->
+</body>
+</html>

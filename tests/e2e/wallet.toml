@@ -1,0 +1,15 @@
+# The regtest test wallet. Its key is BIP32 test vector 1, well known
+# and worthless, so never send mainnet funds to anything it derives. It derives every regtest address the
+# suite and live regtest runs use, so a fresh chain never changes one.
+
+descriptor = "wpkh(tprv8ZgxMBicQKsPeDgjzdC36fs6bMjGApWDNLR9erAXMs5skhMv36j9MV5ecvfavji5khqjWaWSFhN3YcCUUdiKH6isR4Pwy3U5y5egddBr16m/84h/1h/0h/0/*)#xdyufc4z"
+
+# The derivation index of each role.
+[index]
+pool_wallet = 0  # bcrt1q7f0pjwhc3jzzv0w4uurm589506glv2dggfan4s
+operator = 1     # bcrt1q3jeqwzg70pfkc9k4pvynlmfjlrrghp0cd705hx, config/regtest.toml
+partner = 2      # bcrt1q9heskcpee3fhxgm82a5gwqfswqrcfzwg3uqe2a, config/regtest.toml
+bitaxe = 3       # bcrt1qcnxd6rzj5n8xeplvyn0p0ygrusqupu79k3l3n5, its AxeOS user on regtest
+puntominer = 4   # bcrt1qluesh7twxxw9naxhptp0scecccufcm6mxnc8x4
+# The simulated miners of the e2e suite take indices 10 to 19, one per miner.
+simulated_miners = [10, 19]

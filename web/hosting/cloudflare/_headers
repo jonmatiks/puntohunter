@@ -1,0 +1,8 @@
+# The headers Cloudflare Pages or Workers static assets add to every file; Netlify reads the same file.
+# build.py --host cloudflare puts it at the site's root. These are what a page's meta tags cannot carry; each
+# page's own Content-Security-Policy covers the rest, and the browser enforces both.
+/*
+  Content-Security-Policy: frame-ancestors 'none'
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

@@ -1,0 +1,26 @@
+[package]
+name = "sv2-testclient"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "The e2e suite's SV2 client, driven from pytest over JSON lines"
+
+[dependencies]
+# The pool's own SRI crates, at its exact pins, so the harness shares its codec.
+binary_sv2 = "=7.0.0"
+bitcoin = "0.32"
+codec_sv2 = { version = "=7.0.0", features = ["noise_sv2"] }
+common_messages_sv2 = "=9.0.0"
+framing_sv2 = "=8.0.0"
+mining_sv2 = "=12.0.0"
+noise_sv2 = "=2.0.0"
+parsers_sv2 = "=0.6.0"
+serde_json = "1.0"
+# Binds a chosen source address before connecting, which std cannot, so a test's connections come from
+# 127.0.0.2 and on.
+socket2 = "0.6"
+
+[lints.clippy]
+enum_glob_use = "warn"
+wildcard_imports = "warn"

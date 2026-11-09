@@ -1,0 +1,4 @@
+{
+  // Skip what .gitignore excludes (the e2e virtualenv, Cargo's target), so a local run lints what CI does.
+  "gitignore": true
+}

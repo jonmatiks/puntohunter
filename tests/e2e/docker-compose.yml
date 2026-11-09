@@ -1,0 +1,36 @@
+# One regtest node for the e2e suite and live regtest runs. Each run picks its own project name and ports:
+#   RPC_PORT=18443 ZMQ_PORT=28443 docker compose -p <name> -f tests/e2e/docker-compose.yml up -d --wait
+# The defaults are live.py's fixed ports, which config/regtest.toml points at. The datadir is tmpfs, so
+# every `up` starts a fresh chain.
+
+services:
+  bitcoind:
+    build:
+      context: .
+      dockerfile: Dockerfile.bitcoind
+    image: puntohunter-bitcoind:32.1
+    command:
+      - -regtest
+      - -datadir=/data
+      - -printtoconsole
+      - -listen=0
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      # The credentials in config/regtest.toml; they guard a throwaway chain.
+      - -rpcuser=puntohunter
+      - -rpcpassword=puntohunter
+      - -zmqpubhashblock=tcp://0.0.0.0:28332
+      # A long-polled getblocktemplate holds an RPC thread until the next block, even after its pool is
+      # killed, and a regtest chain between blocks has nothing else to end it. The suite starts dozens of
+      # pools against one node, which the default 16 threads do not survive.
+      - -rpcthreads=64
+    tmpfs:
+      - /data:mode=1777
+    ports:
+      - 127.0.0.1:${RPC_PORT:-18443}:18443
+      - 127.0.0.1:${ZMQ_PORT:-28443}:28332
+    healthcheck:
+      test: [CMD, bitcoin-cli, -regtest, -rpcuser=puntohunter, -rpcpassword=puntohunter, getblockchaininfo]
+      interval: 1s
+      timeout: 5s
+      retries: 30

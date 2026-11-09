@@ -1,0 +1,40 @@
+# Caddy's site for the files build.py writes: copy dist/ to the root below, and use this file as Caddy's
+# Caddyfile or import it from there. Change the domain and root to your own. Caddy obtains and renews the
+# Let's Encrypt certificate itself.
+#
+# /api/v1 goes to the pool's portal on the same host, so site.json's api stays empty: no CORS. The pool trusts
+# X-Forwarded-For from Caddy alone ([portal] trusted_proxy = "127.0.0.1"), so its lookup and stream limits still
+# key on each viewer.
+
+pool.example.com {
+	# What a page's meta tags cannot carry; each page's own Content-Security-Policy covers the rest, and the
+	# browser enforces both. no-cache keeps files cached but checks them on each load, so a page never runs
+	# beside a script from an earlier deploy.
+	header {
+		Cache-Control no-cache
+		Content-Security-Policy "frame-ancestors 'none'"
+		Referrer-Policy no-referrer
+		X-Content-Type-Options nosniff
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+
+	# Caddy flushes a text/event-stream response as it arrives, so the live streams pass through as they are.
+	handle /api/v1/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	handle {
+		root * /var/www/portal
+		encode zstd gzip
+		file_server
+	}
+
+	handle_errors {
+		@missing expression {err.status_code} == 404
+		handle @missing {
+			root * /var/www/portal
+			rewrite * /404.html
+			file_server
+		}
+	}
+}

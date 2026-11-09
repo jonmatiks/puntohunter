@@ -1,0 +1,39 @@
+// Grafana Alloy on the pool host, as /etc/alloy/config.alloy. It scrapes the pool's metrics endpoint on
+// loopback and the host's own metrics, and pushes both to a Grafana Cloud stack, so nothing new listens
+// publicly: Alloy's own HTTP server stays on 127.0.0.1:12345. The stack's remote-write URL, its user, and the
+// push token are GRAFANA_CLOUD_URL, GRAFANA_CLOUD_USER, and GRAFANA_CLOUD_TOKEN, from
+// /etc/alloy/grafana-cloud.env (root, 600), which deploy/alloy.conf hands the unit; they are in no file Alloy
+// can read. The `host` label below is the one deploy/alerts.yaml and deploy/dashboard.json select on.
+
+// The host: CPU, steal included, memory, disk, load, and network.
+prometheus.exporter.unix "host" {
+  set_collectors = ["cpu", "diskstats", "filesystem", "loadavg", "meminfo", "netdev", "pressure", "stat", "time"]
+}
+
+prometheus.scrape "host" {
+  // The exporter's targets carry job="integrations/unix", which a job_name here would not replace.
+  targets         = prometheus.exporter.unix.host.targets
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.cloud.receiver]
+}
+
+// The pool's metrics endpoint ([metrics] bind in the pool's config).
+prometheus.scrape "pool" {
+  targets         = [{"__address__" = "127.0.0.1:9100"}]
+  job_name        = "puntohunter"
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.cloud.receiver]
+}
+
+prometheus.remote_write "cloud" {
+  external_labels = {"host" = "eu"}
+
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_USER")
+      password = sys.env("GRAFANA_CLOUD_TOKEN")
+    }
+  }
+}

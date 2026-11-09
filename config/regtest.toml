@@ -1,0 +1,177 @@
+# puntohunter on regtest: `tests/e2e/live.py up`, then `puntohunter serve --config config/regtest.toml`.
+# The e2e harness generates its own config from this file, with the run's ports.
+
+network = "regtest"
+
+[node]
+# The Compose node of tests/e2e/docker-compose.yml on live.py's fixed ports. The credentials guard a
+# throwaway regtest chain.
+rpc_url = "http://127.0.0.1:18443"
+rpc_user = "puntohunter"
+rpc_password = "puntohunter"
+zmq_hashblock = "tcp://127.0.0.1:28443"
+rpc_timeout_secs = 10.0
+longpoll_timeout_secs = 120.0
+
+# The pools, as config/mainnet.toml sets them out, on the same ports as mainnet, so a miner keeps its host
+# and port between the two.
+[[pools]]
+id = "solo"
+name = "Solo"
+v1 = "0.0.0.0:3333"
+v2 = "0.0.0.0:3334"
+finder = { percent = 100 }
+
+[[pools]]
+id = "pooled"
+name = "Pooled"
+v1 = "0.0.0.0:4333"
+v2 = "0.0.0.0:4334"
+finder = { percent = 0 }
+
+[[pools]]
+id = "hybrid"
+name = "Hybrid"
+v1 = "0.0.0.0:5333"
+v2 = "0.0.0.0:5334"
+# A third of each reward, as on mainnet, so the split keeps mainnet's proportions.
+finder = { percent = 33.33 }
+
+[stratum]
+# A connection that has not authorized (V1) or opened a channel (V2) by then is closed. Miners do either
+# within a second of connecting.
+authorize_timeout_secs = 60.0
+
+[metrics]
+bind = "127.0.0.1:9100"
+
+[portal]
+# Plain HTTP on every interface; let the firewall admit only the networks that need it.
+bind = "0.0.0.0:8080"
+# Username lookups each client address may make a minute.
+lookups_per_minute = 30
+# The API's event streams each client address may hold open, and the pool in all.
+streams_per_ip = 20
+max_streams = 2000
+# Days an offline device stays on its fleet's page.
+keep_offline_days = 7
+# Behind a reverse proxy, its address: the only peer whose X-Forwarded-For names the client. Unset without
+# one.
+# trusted_proxy = "127.0.0.1"
+# The portal's brand, as web/build.py's --site and --overlay take it: a site.json with its name and
+# description, and a directory laid over web/src/ whose files replace the app's or are added, such as logo.png.
+# Unset, PuntoHunter's own.
+# site = "/opt/puntohunter/site/site.json"
+# overlay = "/opt/puntohunter/site/overlay"
+
+# [api]
+# The origins whose browser pages may call /api/v1, each exactly; none by default, so the API is same-origin
+# only.
+# allowed_origins = ["https://dashboard.partner.example"]
+
+[public]
+# Where miners connect, as the overview's connection settings give it. `host` is a domain name or an IP
+# address; without it the overview names the host the browser used. Set it to this host's LAN address for a
+# miner on the LAN.
+# host = "192.0.2.10"
+
+[vardiff]
+floor = 1.0
+ceiling = 1_000_000.0
+share_interval_secs = 10.0
+
+[telemetry]
+# Each rollup row covers a minute. The e2e harness shortens it, so rollup tests wait seconds.
+rollup_secs = 60
+
+# Every address is derived from the test wallet, tests/e2e/wallet.toml: pool_wallet is index 0, operator
+# index 1, partner index 2.
+[addresses]
+pool_wallet = "bcrt1q7f0pjwhc3jzzv0w4uurm589506glv2dggfan4s"
+
+[coinbase]
+# Every coinbase's scriptSig carries the tag after the block height; block explorers show it as the pool's
+# name. Up to 32 printable ASCII characters; /puntohunter/ when unset.
+tag = "/puntohunter/"
+# Whether the tag is followed by "Mined by <worker>/", the worker name after the address's dot, cut to 32
+# characters. Worker names then sit on the chain for good, so this is off unless set.
+worker_names = false
+# Whether it is for each worker that adds +name to its username, such as <address>.<worker>+name; never beside
+# worker_names. A pool may set either under its own [pools.coinbase].
+worker_names_opt_in = false
+
+# The fee outputs each coinbase carries after the miner portion, in this order; see
+# config/mainnet.toml.
+[[fees]]
+name = "operator"
+address = "bcrt1q3jeqwzg70pfkc9k4pvynlmfjlrrghp0cd705hx"
+percent = 0.9
+
+[[fees]]
+name = "partner"
+address = "bcrt1q9heskcpee3fhxgm82a5gwqfswqrcfzwg3uqe2a"
+percent = 0.6
+
+[accounting]
+# The PPLNS window of each block with a pool output: its pool output is shared among the last
+# max(window_multiplier × network difficulty, window_min_work) of accepted work, in difficulty-1 units.
+# Regtest's network difficulty is a fraction of one share, so window_min_work sets the window here: a
+# million, about an hour of one Bitaxe's work.
+window_multiplier = 2.0
+window_min_work = 1_000_000.0
+# Blocks beyond coinbase maturity (100) before a block's allocations become available balances.
+maturity_buffer = 0
+
+[payouts]
+# Batched payouts of the balances every pool's blocks credit, from the payout wallet on the node, which holds
+# the pool wallet's key alone; tests/e2e/live.py creates it. An address is paid once its available balances
+# reach threshold_sats, at least the P2TR dust limit of 330. A batch runs every interval_secs, pays up to
+# outputs_per_batch addresses, and pays fee_rate sat/vB, or the node's minimum if that is higher, from the fee
+# reserve. A rate above fee_rate_cap defers the batch. Regtest has no fee estimates; mainnet sets
+# confirmation_target in place of fee_rate and pays the node's estimate for it.
+wallet = "payouts"
+threshold_sats = 100_000
+interval_secs = 60.0
+outputs_per_batch = 100
+fee_rate = 2.0
+fee_rate_cap = 10.0
+
+# The group this instance belongs to: other instances on hosts and domains of their own,
+# each a [[group.members]] entry. Every refresh_secs (30 by default) each member's GET /api/v1/pool is read,
+# and the overview and GET /api/v1/group add their figures to this instance's, as totals alone. `name` heads
+# the overview's card. A member's `name`, 1 to 32 lower-case letters, digits, and '-', labels its logs and
+# metric, never a page; its `url` is an origin, with no path. Without [group], the overview shows no group.
+# With show_members (false by default), the card lists each instance by its `label`, 1 to 32 characters of
+# public text required on [group], for this instance, and on every member; a member's optional `link`, an
+# origin, makes its label a link to that portal. A member's `name` and `url` are never shown.
+#
+# [group]
+# name = "PuntoHunter Group"
+# label = "Home"
+# show_members = true
+#
+# [[group.members]]
+# name = "west"
+# url = "https://west.example.com"
+# label = "West"
+# link = "https://west.example.com"
+
+# The IP-to-country database the stats page counts connected workers by country from:
+# a MaxMind DB file, such as DB-IP's IP to Country Lite (CC BY 4.0, monthly, no account) or MaxMind's
+# GeoLite2 Country. It is reopened when it changes, checked hourly. Without [geo], the page has no countries.
+# With min_workers above 1 (1 by default), a country with fewer connected workers counts as "Elsewhere", so no
+# row shows one worker's hashrate beside where it is.
+#
+# [geo]
+# database = "/opt/puntohunter/geo/dbip-country-lite.mmdb"
+# min_workers = 3
+
+# How many rows each list of the stats page and GET /api/v1/stats shows, each 10 by default. The miner types
+# and the countries past theirs fold into "Other" and "Elsewhere". A fleet's ranks count every fleet.
+#
+# [stats]
+# best_shares_round = 10
+# best_shares_24h = 10
+# hash_rates = 10
+# miner_types = 10
+# countries = 10

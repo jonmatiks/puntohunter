@@ -1,0 +1,11 @@
+<!-- common.js fills the network and the version from the pool resource. -->
+<footer id="footer">
+  <p>Mining network: Bitcoin <span data-bind="network">–</span></p>
+  <p>Pool version: <span data-bind="version">–</span> · Powered by <a href="https://puntohunter.com">PuntoHunter</a></p>
+  <!-- The credits the country databases' licences ask for. While the pool lists countries, js/pages/stats.js
+       shows the one the stats resource's country_source names, DB-IP's or MaxMind's, and neither for a
+       database of another source. -->
+  <p id="geo-credit-dbip" hidden><a href="https://db-ip.com">IP Geolocation by DB-IP</a>, licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.</p>
+  <p id="geo-credit-maxmind" hidden>This product includes GeoLite2 data created by MaxMind, available from <a href="https://www.maxmind.com">https://www.maxmind.com</a>.</p>
+  <p class="disclaimer">This service is provided “AS IS,” without warranty of any kind, express or implied; you assume all risk. The operator has no obligation and is not liable for any loss. Finding a block is probabilistic—neither successful block discovery nor any reward is guaranteed, ever. Mining carries risks, including price volatility, network difficulty changes, and service or hardware failures. Please assess your risk tolerance and evaluate your financial condition prior to involvement.</p>
+</footer>

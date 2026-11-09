@@ -1,0 +1,220 @@
+/* Mobile-first: one column, widening on larger screens. The colour tokens are the brand: change them to
+   rebrand the app. Dark by default; the header's theme button saves light, or auto to follow the system, which
+   theme.js sets as data-theme on the root before the page paints. */
+:root {
+  --bg: #141412;
+  --fg: #ecece6;
+  --muted: #a3a39c;
+  --card: #1e1e1b;
+  --border: #33332f;
+  --accent: #fb923c;
+  --good: #4ade80;
+  --warn: #fbbf24;
+  --radius: 0.5rem;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #fafaf7;
+  --fg: #1d1d1b;
+  --muted: #6b6b66;
+  --card: #ffffff;
+  --border: #e2e2dc;
+  --accent: #c2410c;
+  --good: #15803d;
+  --warn: #b45309;
+  color-scheme: light;
+}
+
+:root[data-theme="auto"] { color-scheme: light dark; }
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="auto"] {
+    --bg: #fafaf7;
+    --fg: #1d1d1b;
+    --muted: #6b6b66;
+    --card: #ffffff;
+    --border: #e2e2dc;
+    --accent: #c2410c;
+    --good: #15803d;
+    --warn: #b45309;
+  }
+}
+
+* { box-sizing: border-box; }
+/* hidden always hides, even an element whose class gives it a display of its own. */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+header, main, footer {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+}
+
+/* A phone puts the brand and the theme button on the first row and the nav on a full-width row of its own,
+   scrolling sideways rather than wrapping when it does not fit; a wider screen puts all three on one row. */
+header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+header .brand { margin-right: auto; }
+nav {
+  order: 1;
+  flex-basis: 100%;
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+#theme { padding: 0.5rem; margin-right: -0.5rem; }
+#theme svg { display: block; }
+@media (min-width: 40rem) {
+  nav { order: 0; flex-basis: auto; }
+}
+#forget, #forget-worker { font-size: 0.875rem; }
+
+footer { color: var(--muted); font-size: 0.875rem; }
+footer p { margin: 0.5rem 0; }
+.disclaimer { font-size: 0.8125rem; }
+
+.motto {
+  margin: 1rem 0 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+  font-style: italic;
+}
+
+a { color: var(--accent); }
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 1.125rem;
+}
+.brand img { display: block; }
+h1 { font-size: 1.5rem; line-height: 1.25; }
+h2 { font-size: 1.125rem; margin-top: 0; }
+code { overflow-wrap: anywhere; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0;
+}
+
+/* A div around a few rows, which a page shows or hides together, leaves them on the list's grid, nested once. */
+dl > div, dl > div > div { display: contents; }
+dt { color: var(--muted); }
+dd { margin: 0; font-variant-numeric: tabular-nums; }
+/* A group of related figures, such as the four hashrates: its label on a row of its own, then a table whose
+   columns read across, sharing the card evenly. On a phone a figure wraps rather than overflowing the card. */
+dt.group, dd.group { grid-column: 1 / -1; }
+dt.group { margin-top: 0.75rem; }
+dd.group table { table-layout: fixed; }
+dd.group th, dd.group td { padding: 0.125rem 0.5rem 0.125rem 0; white-space: normal; }
+dd.group th { font-size: 0.8125rem; vertical-align: bottom; }
+dd.group td { border-bottom: 0; vertical-align: top; }
+
+form { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+input[type="text"], input[type="password"] {
+  flex: 1 1 16rem;
+  min-width: 0;
+  padding: 0.5rem;
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+}
+button {
+  padding: 0.5rem 1rem;
+  font: inherit;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: wait; }
+/* A button that looks and points like a link. */
+button.link { padding: 0; background: none; color: var(--accent); text-decoration: underline; }
+
+/* A value with its copy button; the value wraps, the button keeps its size. */
+.copy { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.copy code { min-width: 0; }
+.copy button, .tabs button {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+.settings dd { min-width: 0; }
+
+.tabs { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+.tabs button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.online { color: var(--good); }
+.idle { color: var(--warn); }
+.offline { color: var(--muted); }
+.outage {
+  border: 1px solid var(--warn);
+  border-radius: var(--radius);
+  color: var(--warn);
+  padding: 0.5rem 0.75rem;
+}
+.error { color: var(--warn); }
+
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td {
+  text-align: left;
+  padding: 0.375rem 0.75rem 0.375rem 0;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+th { color: var(--muted); font-weight: 500; }
+th:last-child, td:last-child { padding-right: 0; }
+.scroll { overflow-x: auto; }
+/* Wide tables leave the 48rem text column for as much of the screen as they need, centred on it, and never
+   come out narrower than the column, so on a phone they scroll. 3rem rather than the 2rem of main's padding
+   leaves room for a desktop's scrollbar, which 100vw counts. */
+.wide {
+  width: fit-content;
+  min-width: 100%;
+  max-width: calc(100vw - 3rem);
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+.hash { font-family: ui-monospace, monospace; font-size: 0.875rem; }
+td .hash { font-size: 0.75rem; }
+.tag {
+  display: inline-block;
+  padding: 0 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.875rem;
+}
+.muted { color: var(--muted); }
+.plot { min-height: 1rem; }

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--#include head.html -->
+<title>{{title}}</title>
+<script type="module" src="/js/pages/overview.js"></script>
+</head>
+<body>
+<!--#include header.html -->
+<main>
+<!--#include outage.html -->
+<!--#include intro.html -->
+
+<!-- The overview: the username lookup, the pool's statistics, refreshed every 30 s, each pool's setup, the
+     payout terms, and the miner settings, all from GET /api/v1/pool (API reference section 2.1), and the
+     group's totals from GET /api/v1/group (section 2.11) when the pool is in one.
+     js/pages/overview.js shows one data-state at a time and fills the data-bind fields; js/bind.js lists what
+     each data-* attribute does. Text and layout are free to change. -->
+
+<p class="muted" data-state="loading">Loading…</p>
+<noscript><p>This page needs JavaScript: it reads the pool's figures live from its API.</p></noscript>
+
+<div data-state="failed" hidden>
+  <h1>The pool cannot be reached</h1>
+  <p class="muted">Its figures could not be read just now. Try again in a minute.</p>
+</div>
+
+<div data-state="ready" hidden>
+  <blockquote class="motto">…hope is a good thing, maybe the best of things, and no good thing ever dies.</blockquote>
+
+  <!-- The lookup: a full username opens its address's fleet, the private one with its fleet password. Both go to
+       the pool by POST, never in a URL. -->
+  <section class="card">
+    <h2>Look Up</h2>
+    <form id="lookup-form">
+      <input type="text" name="username" placeholder="address.worker" aria-label="Username" required
+             autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+      <input type="password" name="password" placeholder="fleet password, if set" aria-label="Fleet password"
+             autocomplete="off">
+      <button type="submit">Look up</button>
+    </form>
+    <!-- One answer at a time, by the pool's error code; an error without its own shows "unreachable". -->
+    <div id="lookup-answer" role="status">
+      <p class="error" data-if="invalid_username" hidden>Enter the username your device mines with: your Bitcoin address, a dot, and the worker name.</p>
+      <p class="error" data-if="worker_name_required" hidden>An address alone finds nothing: enter the username your device mines with, the address, a dot, and the worker name.</p>
+      <p class="error" data-if="not_found" hidden>No worker has mined under that username here. Check it is the one your device mines with, worker name included, and its fleet password, if it sets one.</p>
+      <p class="error" data-if="rate_limited" hidden>Too many lookups came from your network in the last minute. Try again in <span data-bind="retry_after_secs"></span> s.</p>
+      <p class="error" data-if="unreachable" hidden>The pool cannot be reached right now. Try again in a minute.</p>
+    </div>
+    <p class="muted">The username of any one worker opens a fleet page of every worker mining to its address, and with its fleet password, of every worker that sets it.</p>
+  </section>
+
+  <!-- Filled again every 30 s. -->
+  <section class="card" id="statistics">
+    <h2>Statistics</h2>
+    <dl>
+      <div data-each="pools">
+        <template>
+          <dt data-bind="name"></dt>
+          <dd><span data-bind="hash_rate" data-format="hashRate"></span>, <span data-bind="devices"></span> connected</dd>
+        </template>
+      </div>
+      <dt>Block height</dt>
+      <dd data-bind="chain.tip_height"></dd>
+      <dt>Best share</dt>
+      <dd data-bind="round_best_share" data-format="difficulty"></dd>
+      <dt>Network difficulty</dt>
+      <dd data-bind="chain.network_difficulty" data-format="difficulty"></dd>
+      <dt>Blocks found</dt>
+      <dd><a href="/blocks.html" data-bind="blocks_found"></a></dd>
+      <dt>Uptime</dt>
+      <dd><span data-bind="uptime_secs" data-format="span"></span>, since <time data-bind="started_at" data-format="local" data-title="started_at|utc" data-datetime="started_at|iso"></time></dd>
+    </dl>
+    <p><a href="/stats.html">More stats →</a></p>
+  </section>
+
+  <!-- The group's totals, filled again with the statistics, and shown only when the pool is in a group. They
+       name no member unless the operator turns on show_members, which lists each instance by its label, never
+       by a member's name or URL. -->
+  <section class="card" id="group" data-if="name" hidden>
+    <h2 data-bind="name"></h2>
+    <dl>
+      <dt>Hashrate</dt>
+      <dd data-bind="hash_rate" data-format="hashRate"></dd>
+      <dt>Connected</dt>
+      <dd data-bind="devices"></dd>
+      <dt>Blocks found</dt>
+      <dd data-bind="blocks_found"></dd>
+      <dt>Instances</dt>
+      <dd><span data-bind="reporting"></span> of <span data-bind="instances"></span> reporting</dd>
+    </dl>
+    <div class="scroll" data-if="members">
+      <table>
+        <thead>
+          <tr><th>Instance</th><th>Hashrate</th><th>Connected</th><th>Blocks found</th></tr>
+        </thead>
+        <tbody data-each="members">
+          <template>
+            <tr>
+              <td><a data-if="link" data-link="link" data-bind="label"></a><span data-if="!link" data-bind="label"></span><span data-if="this"> <span class="muted">(this one)</span></span></td>
+              <td data-if="reporting" data-bind="hash_rate" data-format="hashRate" data-empty=""></td>
+              <td data-if="reporting" data-bind="devices" data-empty=""></td>
+              <td data-if="reporting" data-bind="blocks_found" data-empty=""></td>
+              <td colspan="3" class="muted" data-if="!reporting">not reporting</td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- One card per pool. Its payout rule is the one paragraph group its "rule" names: solo, pooled, personal
+       (a hybrid pool where each device picks its finder part), or fixed (a hybrid pool with one part). -->
+  <section data-each="pools">
+    <template>
+      <article class="card">
+        <h2><span data-bind="name"></span> Setup</h2>
+        <dl class="settings">
+          <div data-if="stratum_v1">
+            <dt>Stratum V1</dt>
+            <dd class="copy"><code data-bind="stratum_v1"></code> <button type="button" data-copy>Copy</button></dd>
+          </div>
+          <div data-if="stratum_v2">
+            <dt>Stratum V2</dt>
+            <dd class="copy"><code data-bind="stratum_v2"></code> <button type="button" data-copy>Copy</button></dd>
+          </div>
+        </dl>
+        <p class="muted">The port you connect to picks the pool, and each pool takes Stratum V1, V2, or both.</p>
+
+        <div data-if="rule=solo">
+          <p class="muted">The device that finds a block is paid <span data-if="miner"><span data-bind="miner" data-format="portion"></span> of its reward</span><span data-if="!miner">its reward, less the fees below,</span> to your address in that block's coinbase: the pool never holds it.</p>
+        </div>
+
+        <div data-if="rule=pooled">
+          <p class="muted">Every block's reward, after fees, is shared by work among <span data-bind="name"></span> miners: blocks pay the pool, and <span data-if="miner"><span data-bind="miner" data-format="portion"></span> of the reward</span><span data-if="!miner">the reward after the fees below</span> is shared by their recent work (difficulty-weighted PPLNS); see <a href="#payouts">payouts</a> below.</p>
+        </div>
+
+        <div data-if="rule=personal">
+          <p class="muted">The device that finds a block is paid the part of its reward it chose, <span data-bind="finder" data-format="portion"></span> unless it sets one, from <span data-bind="personal.min" data-format="portion"></span> to <span data-bind="personal.max" data-format="portion"></span>, in that block's coinbase. The rest, after fees, is shared by work among <span data-bind="name"></span> miners, weighted by what each device leaves to the pool. See <a href="#payouts">payouts</a> below.</p>
+          <p class="muted">A device chooses its part by adding it to its username after a +: as a percent, <code>&lt;address&gt;.&lt;worker&gt;+50</code>, or a fixed amount, <code>+0.5btc</code> or <code>+50000000sats</code>. A part outside the range is paid at the nearer bound. Whatever the part, each share earns the same in expectation: a larger part trades the pool's steady payouts for its own blocks' variance.</p>
+        </div>
+
+        <div data-if="rule=fixed">
+          <p class="muted">The device that finds a block is paid <span data-bind="finder" data-format="portion"></span> of its reward in that block's coinbase, spendable after 100 confirmations. The rest, after fees, is shared by work among <span data-bind="name"></span> miners. See <a href="#payouts">payouts</a> below.</p>
+        </div>
+
+        <p class="muted" data-if="worker_names_opt_in">Add +name to a device's username to write its worker name into the blocks it finds, as <code>Mined by &lt;worker&gt;/</code>. A name written to a block stays on the chain for good<span data-if="kind=pooled">.</span><span data-if="!kind=pooled">, beside the finder's address.</span></p>
+
+        <p class="muted" data-if="!fees">The pool takes no fee.</p>
+        <p class="muted" data-if="fees">Each block's reward also pays <span data-bind="fees" data-format="fees"></span>.</p>
+      </article>
+    </template>
+  </section>
+
+  <!-- The payout terms: shown while a pool shares its blocks, or while payouts run, so balances left from such
+       a pool still show their terms. -->
+  <section class="card" id="payouts" data-if="payout_terms">
+    <h2>Payouts</h2>
+    <dl>
+      <dt>Maturity</dt>
+      <dd>Credited pending when the block is found, and available once it has <span data-bind="accounting.available_after_confirmations"></span> confirmations.</dd>
+      <div data-if="payouts">
+        <dt>Threshold</dt>
+        <dd><span data-bind="payouts.threshold_sats" data-format="btc"></span> BTC, an address's balances in every pool together; a smaller balance carries forward and never expires.</dd>
+        <dt>Schedule</dt>
+        <dd>A batch every <span data-bind="payouts.interval_secs" data-format="span"></span>, one on-chain transaction paying each address its whole balance, its fee from the operator's reserve.</dd>
+        <dt>Last payout</dt>
+        <dd data-if="payouts.last">Batch <span data-bind="payouts.last.batch"></span>, <span data-bind="payouts.last.state"></span>: <span data-bind="payouts.last.paid_sats" data-format="btc"></span> BTC to <span data-bind="payouts.last.payees"></span> <span data-if="payouts.last.payees=1">address</span><span data-if="!payouts.last.payees=1">addresses</span>, fee <span data-bind="payouts.last.fee_sats" data-format="btc"></span> BTC<span data-if="payouts.last.reserved_at">, reserved <span data-bind="payouts.last.reserved_at" data-format="ago"></span></span></dd>
+        <dd data-if="!payouts.last">None yet</dd>
+        <!-- Why payouts wait, where they do. -->
+        <div data-if="payouts.standing.state=starting">
+          <dt>Status</dt>
+          <dd>Payouts are starting: the books are being checked against the payout wallet.</dd>
+        </div>
+        <div data-if="payouts.standing.state=paused">
+          <dt>Status</dt>
+          <dd>Payouts are paused: a block whose balances were reserved or paid left the chain, and the operator reconciles the books.</dd>
+        </div>
+        <div data-if="payouts.standing.state=halted">
+          <dt>Status</dt>
+          <dd>Payouts are halted: the books, the payout wallet, and the chain disagree, and the operator reconciles them.</dd>
+        </div>
+        <div data-if="payouts.standing.state=locked">
+          <dt>Status</dt>
+          <dd>A batch is reserved and waits for the operator to sign it: the payout wallet stays locked between payouts, and the operator unlocks it for each batch.</dd>
+        </div>
+        <div data-if="payouts.standing.state=deferred">
+          <dt>Status</dt>
+          <dd>The next batch is deferred: <span data-bind="payouts.standing.reason"></span>.</dd>
+        </div>
+      </div>
+      <div data-if="!payouts">
+        <dt>Payouts</dt>
+        <dd>Not enabled on this pool yet: balances accrue and are kept.</dd>
+      </div>
+    </dl>
+    <p><a href="/balance.html">Your balance</a> opens with the token the operator gives you.</p>
+  </section>
+
+  <section class="card" id="miner-settings">
+    <h2>Miner settings</h2>
+    <dl class="settings">
+      <dt>Username</dt>
+      <dd><code>&lt;address&gt;.&lt;worker&gt;</code></dd>
+      <dt>Password</dt>
+      <dd>none, or a fleet password of 8 characters or more to make your fleet private</dd>
+    </dl>
+    <p class="muted">Give each miner a worker name. Your username is your Bitcoin address, a dot, and a worker name: <code>address.worker</code></p>
+    <p class="muted">Worker names take up to 64 letters, digits, dots, dashes, and underscores.</p>
+    <p class="muted">Without a fleet password, anyone who knows your address can open your fleet page. Set the same one on each device to make it private: in the password field over Stratum V1, or after a # in the username over Stratum V2, which has no password field: <code>address.worker#password</code>. A fleet password takes no +.</p>
+  </section>
+
+  <section class="card">
+    <h2>Stratum V2 authority key</h2>
+    <p class="copy"><code class="key" data-bind="authority_key"></code> <button type="button" data-copy>Copy</button></p>
+    <p class="muted">Pin this key in your miner to trust the pool's V2 certificate. The V2 URLs above carry it already.</p>
+    <div data-if="next_authority_key" hidden>
+      <p>On <strong data-bind="next_authority_key.switch_on"></strong> (UTC) the pool switches to a new key:</p>
+      <p class="copy"><code class="key" data-bind="next_authority_key.key"></code> <button type="button" data-copy>Copy</button></p>
+    </div>
+    <p class="muted">A change of key is announced here, with the new key and the day it takes over, ahead of the switch. Keep the current key until then: a V2 device pinned to the new key cannot connect before the switch, and one pinned to the old key cannot connect after it, until you enter the new key or the new V2 URL. Stratum V1 devices are not affected.</p>
+  </section>
+</div>
+<!--#include about.html -->
+
+</main>
+<!--#include footer.html -->
+</body>
+</html>

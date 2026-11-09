@@ -1,0 +1,99 @@
+# Three regtest nodes connected to each other over P2P, for the fleet suite, and a signet
+# node without peers for the wrong-chain case, started only by its profile. Each run picks its own project
+# name and ports, as docker-compose.yml's single node does:
+#   RPC_0=... ZMQ_0=... RPC_1=... ZMQ_1=... RPC_2=... ZMQ_2=... RPC_W=... ZMQ_W=... \
+#     docker compose -p <name> -f tests/e2e/docker-compose.fleet.yml up -d --wait node0 node1 node2
+# The image is docker-compose.yml's, built by regtest.build(). Datadirs are tmpfs, so a node stopped and
+# started again begins a fresh chain and syncs it from the others.
+
+x-node: &node
+  image: puntohunter-bitcoind:32.1
+  tmpfs:
+    - /data:mode=1777
+  healthcheck:
+    test: [CMD, bitcoin-cli, -regtest, -rpcuser=puntohunter, -rpcpassword=puntohunter, getblockchaininfo]
+    interval: 1s
+    timeout: 5s
+    retries: 30
+
+services:
+  node0:
+    <<: *node
+    # As docker-compose.yml's node, but listening for its peers.
+    command:
+      - -regtest
+      - -datadir=/data
+      - -printtoconsole
+      - -listen=1
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcuser=puntohunter
+      - -rpcpassword=puntohunter
+      - -zmqpubhashblock=tcp://0.0.0.0:28332
+      - -rpcthreads=64
+      - -addnode=node1:18444
+      - -addnode=node2:18444
+    ports:
+      - 127.0.0.1:${RPC_0:-18450}:18443
+      - 127.0.0.1:${ZMQ_0:-28450}:28332
+  node1:
+    <<: *node
+    # As docker-compose.yml's node, but listening for its peers.
+    command:
+      - -regtest
+      - -datadir=/data
+      - -printtoconsole
+      - -listen=1
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcuser=puntohunter
+      - -rpcpassword=puntohunter
+      - -zmqpubhashblock=tcp://0.0.0.0:28332
+      - -rpcthreads=64
+      - -addnode=node0:18444
+      - -addnode=node2:18444
+    ports:
+      - 127.0.0.1:${RPC_1:-18451}:18443
+      - 127.0.0.1:${ZMQ_1:-28451}:28332
+  node2:
+    <<: *node
+    # As docker-compose.yml's node, but listening for its peers.
+    command:
+      - -regtest
+      - -datadir=/data
+      - -printtoconsole
+      - -listen=1
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcuser=puntohunter
+      - -rpcpassword=puntohunter
+      - -zmqpubhashblock=tcp://0.0.0.0:28332
+      - -rpcthreads=64
+      - -addnode=node0:18444
+      - -addnode=node1:18444
+    ports:
+      - 127.0.0.1:${RPC_2:-18452}:18443
+      - 127.0.0.1:${ZMQ_2:-28452}:28332
+  wrong:
+    <<: *node
+    profiles: [wrong]
+    command:
+      - -signet
+      - -datadir=/data
+      - -printtoconsole
+      - -connect=0
+      - -listen=0
+      - -rpcport=18443
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcuser=puntohunter
+      - -rpcpassword=puntohunter
+      - -zmqpubhashblock=tcp://0.0.0.0:28332
+    healthcheck:
+      test: [CMD, bitcoin-cli, -signet, -rpcport=18443, -rpcuser=puntohunter, -rpcpassword=puntohunter, getblockchaininfo]
+      interval: 1s
+      timeout: 5s
+      retries: 30
+    ports:
+      - 127.0.0.1:${RPC_W:-18459}:18443
+      - 127.0.0.1:${ZMQ_W:-28459}:28332

@@ -1,0 +1,12 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The security policy, in the page so it holds on any host. build.py writes the pool's API origin into
+     connect-src. A host that can set headers adds what a meta tag cannot carry: see hosting/. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src {{connect_src}}; object-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- No referrer leaves the app, so a fleet's link never reaches another site. -->
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="{{description}}">
+<!-- Not deferred: the saved theme is set before the page paints. -->
+<script src="/js/theme.js"></script>
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="stylesheet" href="/app.css">

@@ -1,0 +1,42 @@
+# The SRI reference roles the interop tests run against, from the sv2-apps v0.8.0 release. The translator is the release's static binary, checked against
+# its pinned SHA256 before it is unpacked; the release publishes no SHA256SUMS, so the hash was taken from
+# the tarball on 2026-09-27. The mining device ships in no release tarball, only in the integration-tests
+# crate, so it is built from that crate's crates.io release at the same version, with its lock file. Base
+# images are pinned by digest.
+
+ARG BASE=debian:trixie-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a
+ARG BUILDER=rust:1.88-slim-bookworm@sha256:38bc5a86d998772d4aec2348656ed21438d20fcdce2795b56ca434cf21430d89
+
+FROM ${BASE} AS fetch
+ARG VERSION=v0.8.0
+ARG TARBALL=miner-apps-x86_64-unknown-linux-musl.tar.gz
+ARG TARBALL_SHA256=884fc904086215225b57e80a776bd0072be8dbff436342e8f9dc196ee889c2b5
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /fetch
+RUN curl -fsSL -o "${TARBALL}" "https://github.com/stratum-mining/sv2-apps/releases/download/${VERSION}/${TARBALL}" \
+    && echo "${TARBALL_SHA256}  ${TARBALL}" | sha256sum --check --strict - \
+    && tar -xzf "${TARBALL}" ./translator/translator_sv2
+
+FROM ${BUILDER} AS build
+# integration_tests_sv2 0.6.0 is the integration-tests crate of sv2-apps v0.8.0. Its Bitcoin Core IPC
+# dependency compiles Cap'n Proto schemas, which needs capnp.
+ARG CRATE_VERSION=0.6.0
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends capnproto libcapnp-dev \
+    && rm -rf /var/lib/apt/lists/*
+RUN cargo install integration_tests_sv2 --version "=${CRATE_VERSION}" --locked --bin mining_device \
+    --root /out
+
+FROM ${BASE} AS translator
+COPY --from=fetch /fetch/translator/translator_sv2 /usr/local/bin/
+RUN useradd --system sri
+USER sri
+ENTRYPOINT ["translator_sv2"]
+
+FROM ${BASE} AS mining-device
+COPY --from=build /out/bin/mining_device /usr/local/bin/
+RUN useradd --system sri
+USER sri
+ENTRYPOINT ["mining_device"]

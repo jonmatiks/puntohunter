@@ -1,0 +1,15 @@
+# On a backup host, as /etc/systemd/system/backup-pull.service: pulls the pool host's database snapshots
+# ([backup] in the pool's config) into /opt/backups/pool. Replace <pool-host> with the pool host's address,
+# preferably one on a private network between the two. The key, /root/.ssh/backup-pull, can only read the
+# snapshot directory: the pool host's authorized_keys runs it under `rrsync -ro`, from this host's address
+# alone. A deletion there is never mirrored here, so a compromised pool host cannot reach these copies; they
+# age out after 7 days. Hidden files are a snapshot still being written. backup-pull.timer runs it.
+[Unit]
+Description=Pull the pool host's database snapshots
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/rsync -rt --chmod=D700,F600 --exclude=.* -e "ssh -i /root/.ssh/backup-pull -o BatchMode=yes" root@<pool-host>: /opt/backups/pool/
+ExecStartPost=/usr/bin/find /opt/backups/pool -name puntohunter-*.sqlite3 -mtime +7 -delete

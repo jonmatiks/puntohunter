@@ -1,0 +1,11 @@
+# On a backup host, as /etc/systemd/system/backup-pull.timer: runs backup-pull.service every 5 minutes, so a
+# copy lags the pool host's newest snapshot by one pull at most.
+[Unit]
+Description=Pull the pool host's database snapshots every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

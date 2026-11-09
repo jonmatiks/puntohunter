@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--#include head.html -->
+<!-- Personal to one miner, and many: kept out of search. -->
+<meta name="robots" content="noindex">
+<title>Fleet · {{name}}</title>
+<link rel="stylesheet" href="/vendor/uPlot-1.6.32.min.css">
+<!-- Deferred scripts run in order once the page is parsed, so uPlot is defined before the page starts. -->
+<script src="/vendor/uPlot-1.6.32.iife.min.js" defer></script>
+<script type="module" src="/js/pages/fleet.js"></script>
+</head>
+<body>
+<!--#include header.html -->
+<main>
+<!--#include outage.html -->
+
+<!-- A fleet: every device mining to one address, opened as /fleet.html#<handle>, or as /fleet.html for the fleet this
+     browser saved. js/pages/fleet.js shows one data-state at a time, and fills the data-bind fields from the
+     pool's fleet resource and its stream (API reference sections 2.3 and 2.4); js/bind.js lists what each
+     data-* attribute does. Text and layout are free to change. -->
+
+<p class="muted" data-state="loading">Loading…</p>
+<noscript><p>This page needs JavaScript: it reads the pool's figures live from its API.</p></noscript>
+
+<div data-state="none" hidden>
+  <h1>My fleet</h1>
+  <p>No fleet is saved in this browser yet. Look up the username one of your devices mines with on the <a href="/">overview</a>, and its fleet opens here.</p>
+</div>
+
+<div data-state="not-found" hidden>
+  <h1>Not found</h1>
+  <p>No fleet has this link. Look up the username one of your devices mines with on the <a href="/">overview</a>.</p>
+</div>
+
+<div data-state="failed" hidden>
+  <h1>The pool cannot be reached</h1>
+  <p class="muted">Its figures could not be read just now. Try again in a minute.</p>
+</div>
+
+<div data-state="ready" hidden>
+  <h1>My fleet</h1>
+
+  <!-- Filled once, from the fleet resource. -->
+  <p id="fleet-head">
+    <code class="hash" data-if="address" data-bind="address" data-format="shortAddress" data-title="address"></code>
+    <button type="button" class="link" id="forget">Forget</button>
+  </p>
+  <!-- On an open fleet, keyed on the address alone: how to make it private. -->
+  <p class="muted" id="open-fleet" data-if="!private" hidden>To make this fleet page private, set a fleet password on your devices, as the <a href="/#miner-settings">miner settings</a> show.</p>
+  <!-- Where the fleet stands on each list of the stats page, filled once from the fleet resource, and shown when
+       it is on one. -->
+  <p id="ranks" data-if="ranks" hidden>On the <a href="/stats.html">stats</a>:<span data-each="ranks"><template> <span data-if="list=best_share"><span data-bind="rank" data-format="ordinal"></span> best share this round</span><span data-if="list=best_share_24h"><span data-bind="rank" data-format="ordinal"></span> over the last 24 hours</span><span data-if="list=hash_rate"><span data-bind="rank" data-format="ordinal"></span> by hashrate now</span><span data-if="!last">;</span></template></span>.</p>
+
+  <!-- Filled from the fleet resource, then from each event of its stream, which leaves out the handle and the
+       address. -->
+  <div id="live">
+    <section data-each="pools">
+      <!-- One card per pool the fleet mines in. -->
+      <template>
+        <article class="card">
+          <h2 data-bind="name"></h2>
+          <dl>
+            <dt>Workers</dt>
+            <dd><span data-bind="online"></span> of <span data-bind="total"></span> online</dd>
+
+            <dt class="group">Hashrate</dt>
+            <dd class="group"><table>
+              <tr><th>1 min</th><th>10 min</th><th>1 h</th><th>24 h</th></tr>
+              <tr>
+                <td data-bind="hash_rate.1m" data-format="rate"></td>
+                <td data-bind="hash_rate.10m" data-format="rate"></td>
+                <td data-bind="hash_rate.1h" data-format="rate"></td>
+                <td data-bind="hash_rate.24h" data-format="rate"></td>
+              </tr>
+            </table></dd>
+
+            <dt class="group">Difficulty</dt>
+            <dd class="group"><table>
+              <tr>
+                <th>Best</th>
+                <th>Network</th>
+                <th data-if="solo.best_vs_network" title="The best share as a percentage of the network difficulty">% of network</th>
+              </tr>
+              <tr>
+                <td data-bind="best_share" data-format="difficulty"></td>
+                <td data-bind="chain.network_difficulty" data-format="difficulty"></td>
+                <td data-if="solo.best_vs_network" data-bind="solo.best_vs_network" data-format="roughPercent"></td>
+              </tr>
+            </table></dd>
+
+            <dt class="group">Shares</dt>
+            <dd class="group"><table>
+              <tr><th>Last</th><th>Accepted</th><th>Refused</th></tr>
+              <tr>
+                <td data-bind="last_share_at" data-format="ago" data-empty="none yet"></td>
+                <td data-bind="accepted"></td>
+                <td data-bind="rejected"></td>
+              </tr>
+            </table></dd>
+
+            <!-- The odds of a block, worded as odds and never as a forecast. A pool that also pays a pool
+                 output pays its finder only a part, so there they are the odds of that payout. -->
+            <div data-if="solo">
+              <div data-if="solo.odds.unavailable">
+                <dt>
+                  <span data-if="solo.finder_payout">Odds of a finder's payout</span>
+                  <span data-if="!solo.finder_payout">Odds of a block</span>
+                </dt>
+                <dd class="muted">– (<span data-bind="solo.odds.unavailable" data-format="why"></span>)</dd>
+              </div>
+              <div data-if="!solo.odds.unavailable">
+                <dt class="group">
+                  <span data-if="solo.finder_payout">Odds of a finder's payout</span>
+                  <span data-if="!solo.finder_payout">Odds of a block</span>
+                  <span class="muted" data-if="solo.estimating">(estimating)</span>
+                </dt>
+                <dd class="group"><table>
+                  <tr><th>Per day</th><th>Per month</th><th>Per year</th></tr>
+                  <tr>
+                    <td data-bind="solo.odds.day" data-format="chance"></td>
+                    <td data-bind="solo.odds.month" data-format="chance"></td>
+                    <td data-bind="solo.odds.year" data-format="chance"></td>
+                  </tr>
+                </table></dd>
+                <dt class="group">Wait for a block</dt>
+                <dd class="group"><table>
+                  <tr><th>Median</th><th>Average</th></tr>
+                  <tr>
+                    <td data-bind="solo.odds.median_wait_secs" data-format="wait"></td>
+                    <td data-bind="solo.odds.average_wait_secs" data-format="wait"></td>
+                  </tr>
+                </table></dd>
+              </div>
+            </div>
+
+            <!-- A part of the pool's current window, worded as an estimate, never as a balance. -->
+            <div data-if="window">
+              <div data-if="window.unavailable">
+                <dt>Window share</dt>
+                <dd class="muted">– (<span data-bind="window.unavailable" data-format="why"></span>)</dd>
+              </div>
+              <div data-if="!window.unavailable">
+                <dt class="group">Window <span class="muted">(an estimate, credited only if the pool finds a block; not a balance)</span></dt>
+                <dd class="group"><table>
+                  <tr><th>Share of the <span data-bind="window.pool" data-format="pool"></span> window</th><th>If a block were found now</th></tr>
+                  <tr>
+                    <td data-bind="window.fraction" data-format="percent"></td>
+                    <td>about <span data-bind="window.estimate_sats" data-format="btc"></span> BTC</td>
+                  </tr>
+                </table></dd>
+              </div>
+            </div>
+
+            <dt class="group">Blocks</dt>
+            <dd class="group"><table>
+              <tr><th>Height</th><th>Found</th></tr>
+              <tr>
+                <td data-bind="chain.tip_height"></td>
+                <td data-bind="blocks"></td>
+              </tr>
+            </table></dd>
+          </dl>
+        </article>
+      </template>
+    </section>
+
+    <section class="card wide">
+      <h2>Workers</h2>
+      <p class="muted" data-if="!listed">No device has mined here in the last <span data-bind="keep_offline_days" data-format="lastDays"></span>.</p>
+      <div class="scroll" data-if="devices">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th><th>Miner</th><th>Status</th><th>Hashrate</th><th>Pool</th><th>Best share</th><th>Last share</th>
+              <th title="Its share of its pool's current window">Window</th>
+            </tr>
+          </thead>
+          <tbody data-each="devices">
+            <template>
+              <tr>
+                <td>
+                  <a data-href="/worker.html#{handle}">
+                    <span data-if="name" data-bind="name"></span>
+                    <span class="muted" data-if="!name">(no name)</span>
+                  </a>
+                  <span class="muted" data-if="shared"> · <span data-bind="shared"></span></span>
+                </td>
+                <td data-bind="miner"></td>
+                <td data-class="status" data-bind="." data-format="device"></td>
+                <td data-bind="hash_rate" data-format="rate"></td>
+                <td><span data-bind="pool" data-format="pool"></span><span data-if="transports"> · <span data-bind="transports"></span></span></td>
+                <td data-bind="best_share" data-format="difficulty"></td>
+                <td data-bind="last_share_at" data-format="ago" data-empty="none yet"></td>
+                <td data-bind="window.fraction" data-format="percent"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted" data-if="forgotten" hidden><span data-bind="forgotten"></span> <button type="button" class="link" id="show-forgotten">Show</button></p>
+    </section>
+  </div>
+
+  <!-- The hash-rate chart, per pool (API reference section 2.7). js/chart.js draws it in .plot over the range
+       pressed, which this browser remembers. -->
+  <section class="card" id="chart">
+    <h2>Hashrate</h2>
+    <div class="tabs" role="group" aria-label="Chart range">
+      <button type="button" data-range="1h">1 h</button>
+      <button type="button" data-range="24h" aria-pressed="true">24 h</button>
+      <button type="button" data-range="7d">7 days</button>
+    </div>
+    <div class="plot"></div>
+    <p class="muted empty" hidden>No history yet: the chart fills in as each minute ends.</p>
+  </section>
+
+  <!-- The fleet's blocks, newest first (API reference section 2.8), read again when the chain tip moves. -->
+  <section class="card wide" id="blocks">
+    <h2>Blocks</h2>
+    <p class="muted" data-if="loading">Loading…</p>
+    <p class="muted" data-if="none" hidden>No blocks yet.</p>
+    <p class="muted" data-if="failed" hidden>The blocks cannot be read right now.</p>
+    <div class="scroll" data-if="blocks" hidden>
+      <table>
+        <thead>
+          <tr>
+            <th>Height</th><th>Status</th><th>Pool</th><th>Finder</th><th>Miner</th>
+            <th>To finder, BTC</th><th>To pool, BTC</th><th>Allocated, BTC</th><th>Maturity</th><th>Hash</th>
+          </tr>
+        </thead>
+        <tbody data-each="blocks">
+          <template>
+            <tr>
+              <td data-bind="height"></td>
+              <td data-bind="status" data-format="blockStatus"></td>
+              <td><span data-bind="pool" data-format="pool"></span><span data-if="transport"> · <span data-bind="transport"></span></span></td>
+              <td>
+                <span data-if="!finder">–</span>
+                <a data-if="finder" data-href="/worker.html#{finder}">
+                  <span data-if="finder_name" data-bind="finder_name"></span>
+                  <span class="muted" data-if="!finder_name">(no name)</span>
+                </a>
+              </td>
+              <td data-bind="miner"></td>
+              <td data-bind="finder_sats" data-format="btc"></td>
+              <td data-bind="pool_sats" data-format="btc"></td>
+              <td data-bind="allocated_sats" data-format="btc"></td>
+              <td data-bind="blocks_to_maturity" data-format="maturity"></td>
+              <td class="hash" data-bind="hash" data-format="shortHash" data-title="hash"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+</main>
+<!--#include footer.html -->
+</body>
+</html>

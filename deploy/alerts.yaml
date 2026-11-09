@@ -1,0 +1,195 @@
+# The alert rules of the Grafana Cloud stack, in Grafana's alert-rule provisioning format.
+# deploy/grafana-push.py writes them to the stack's folder "PuntoHunter"; change a rule here and push again,
+# never in the UI alone. Every rule queries the stack's hosted Prometheus, which Alloy on the pool host pushes
+# to (deploy/config.alloy), and notifies the default contact point.
+#
+# A series that stops arriving is "no data". Each rule but host-silent treats it as fine, so a host that goes
+# quiet raises one alert, host-silent's, rather than one per rule.
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: puntohunter
+    folder: PuntoHunter
+    interval: 1m
+    rules:
+      - uid: host-silent
+        title: Host silent
+        condition: C
+        for: 1m
+        noDataState: Alerting
+        execErrState: Error
+        annotations:
+          summary: No metrics from the pool host for 2 minutes. The host, its network, or Alloy is down.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: grafanacloud-prom
+            model: {refId: A, instant: true, expr: 'count_over_time(up{job="integrations/unix", host="eu"}[2m])'}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: lt, params: [1]}}]}
+
+      - uid: pool-down
+        title: Pool down
+        condition: C
+        for: 1m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The pool's metrics endpoint does not answer, or it is not ready. Miners get no work.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: grafanacloud-prom
+            model:
+              refId: A
+              instant: true
+              expr: 'min(up{job="puntohunter", host="eu"}) * (min(puntohunter_ready{host="eu"}) or vector(0))'
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: lt, params: [1]}}]}
+
+      - uid: node-unfit
+        title: Node unfit
+        condition: C
+        for: 2m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: 'Node {{ $labels.node }} is not fit: stopped, hung, stuck, isolated, in IBD, or on another chain.'
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: grafanacloud-prom
+            model: {refId: A, instant: true, expr: 'puntohunter_node_standing{host="eu", standing="fit"}'}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: lt, params: [1]}}]}
+
+      - uid: node-behind
+        title: Node behind
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: 'Node {{ $labels.node }} has been more than 2 blocks behind the fleet''s best tip for 10 minutes.'
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: grafanacloud-prom
+            model: {refId: A, instant: true, expr: 'puntohunter_node_lag_blocks{host="eu"}'}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [2]}}]}
+
+      - uid: journal-stopped
+        title: Journal stopped
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: A share journal commit failed, or one has waited over 5 seconds for disk. Pooled credit stops.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: grafanacloud-prom
+            model:
+              refId: A
+              instant: true
+              expr: 'max(puntohunter_journal_failed{host="eu"}) + max(puntohunter_journal_unsynced_seconds{host="eu"} > bool 5)'
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [0]}}]}
+
+      - uid: payouts-stopped
+        title: Payouts paused or halted
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Payouts are paused for reconciliation or halted at startup; the log says why.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: grafanacloud-prom
+            model:
+              refId: A
+              instant: true
+              expr: 'max(puntohunter_payouts_paused{host="eu"}) + max(puntohunter_payouts_halted{host="eu"})'
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [0]}}]}
+
+      - uid: payouts-locked
+        title: Payout waits for unlock
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: A payout batch is reserved and waits for the payout wallet; run unlock.sh to sign and send it.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: grafanacloud-prom
+            model: {refId: A, instant: true, expr: 'max(puntohunter_payouts_locked{host="eu"})'}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [0]}}]}
+
+      - uid: disk-filling
+        title: Disk filling
+        condition: C
+        for: 15m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Under 8% of the pool host's disk is free; the node's chain grows every day.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: grafanacloud-prom
+            model:
+              refId: A
+              instant: true
+              expr: 'node_filesystem_avail_bytes{host="eu", mountpoint="/"} / node_filesystem_size_bytes{host="eu", mountpoint="/"}'
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: lt, params: [0.08]}}]}
+
+      - uid: snapshots-stopped
+        title: Snapshots stopped
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: No database snapshot written for 40 minutes, over two intervals; the pool's log says why.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: grafanacloud-prom
+            model: {refId: A, instant: true, expr: 'time() - puntohunter_backup_last_seconds{host="eu"}'}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: gt, params: [2400]}}]}
+
+      - uid: health-check
+        title: Health check failing
+        condition: C
+        for: 3m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The outside check of /api/v1/health fails, from every probe, for 3 minutes.
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: grafanacloud-prom
+            model: {refId: A, instant: true, expr: 'max(probe_success{job="puntohunter-health"})'}
+          - refId: C
+            datasourceUid: __expr__
+            model: {refId: C, type: threshold, expression: A, conditions: [{evaluator: {type: lt, params: [1]}}]}

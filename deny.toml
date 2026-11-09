@@ -1,0 +1,48 @@
+# cargo-deny's policy for the dependency tree, checked in CI by `cargo deny check`: known advisories, licenses
+# compatible with the project's MIT license, and crates from crates.io alone.
+
+[graph]
+all-features = false
+
+[advisories]
+# Every advisory fails the check, and an unmaintained crate the workspace depends on directly; an exception is
+# listed in `ignore` with the reason it does not apply.
+unmaintained = "workspace"
+yanked = "deny"
+ignore = []
+
+[licenses]
+# Permissive licenses only. CC0-1.0 is the bitcoin and secp256k1 crates'; MITNFA, MIT with an attribution
+# clause, hex_lit's; Unicode-3.0 the ICU crates'; ISC and BSD-3-Clause come with the TLS stack, and
+# CDLA-Permissive-2.0 with webpki-root-certs, Mozilla's root certificates as data. The workspace's own crates,
+# publish = false, are not checked.
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "CC0-1.0",
+    "CDLA-Permissive-2.0",
+    "ISC",
+    "MIT",
+    "MIT-0",
+    "MITNFA",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+confidence-threshold = 0.9
+private = { ignore = true }
+
+[bans]
+# Two versions of one crate are common in a tree this size; warn rather than fail.
+multiple-versions = "warn"
+wildcards = "deny"
+# The workspace's own path dependencies are not wildcards.
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

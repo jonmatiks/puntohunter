@@ -1,0 +1,56 @@
+[package]
+name = "puntohunter"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.89"
+license = "MIT"
+description = "Bitcoin mining pool software: solo, pooled, and hybrid pools side by side, over Stratum V1 and V2"
+repository = "https://github.com/jonmatik/puntohunter"
+homepage = "https://puntohunter.com"
+readme = "README.md"
+keywords = ["bitcoin", "mining", "pool", "stratum", "sv2"]
+categories = ["cryptography::cryptocurrencies", "network-programming"]
+publish = false
+
+[workspace]
+members = ["sv2-testclient"]
+resolver = "3"
+
+[dependencies]
+axum = { version = "0.8", default-features = false, features = ["form", "http1", "json", "query", "tokio"] }
+bitcoin = { version = "0.32", features = ["rand-std", "serde"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
+rusqlite = { version = "0.41", features = ["bundled"] }
+rust-embed = "8.12"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["raw_value"] }
+thiserror = "2.0"
+tokio = { version = "1.53", features = ["io-util", "macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+toml = "1.1"
+tower-http = { version = "0.6", default-features = false, features = ["cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+zeromq = { version = "0.6", default-features = false, features = ["tokio-runtime", "tcp-transport"] }
+
+# stratum-core 0.6's SV2 crates, pinned exactly: their API moves between majors.
+binary_sv2 = "=7.0.0"
+clap = { version = "4.6", features = ["derive"] }
+codec_sv2 = { version = "=7.0.0", features = ["noise_sv2"] }
+common_messages_sv2 = "=9.0.0"
+framing_sv2 = "=8.0.0"
+futures-util = { version = "0.3", default-features = false }
+metrics = "0.24"
+metrics-exporter-prometheus = { version = "0.18.3", default-features = false }
+maxminddb = "0.32"
+mining_sv2 = "=12.0.0"
+noise_sv2 = "=2.0.0"
+parsers_sv2 = "=0.6.0"
+
+[dev-dependencies]
+proptest = "1"
+tokio = { version = "1.53", features = ["test-util"] }
+
+[lints.clippy]
+enum_glob_use = "warn"
+wildcard_imports = "warn"
