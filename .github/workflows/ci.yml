@@ -51,10 +51,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release --locked --workspace
-      # The SRI interop images take minutes to build; build them before pytest's per-test timeouts start.
+      # The images take minutes to build, the regtest node's fetching Bitcoin Core: build them before pytest's
+      # per-test timeouts start, as the binaries above are, so no test's setup builds anything.
+      - run: docker compose -f tests/e2e/docker-compose.yml build
       - run: docker compose -f tests/e2e/docker-compose.sri.yml build
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
       - run: pip install -r tests/e2e/requirements.txt
       - run: pytest tests/e2e -m "not load and not hardware" -n 2
+        env:
+          PUNTOHUNTER_BIN: ${{ github.workspace }}/target/release/puntohunter
