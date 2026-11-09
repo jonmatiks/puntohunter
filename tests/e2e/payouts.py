@@ -29,6 +29,14 @@ def earn(pool, node, solution_forcer, mode, finder, others=(), shares=3, finder_
     """Has miner `finder` find a block in `mode`, after `shares` shares of each of miners `others` and
     `finder_shares` of its own, and returns the block's allocations, as {address: sats}, once written."""
     port = getattr(pool, f"{mode}_v1_port")
+    # The miners' jobs must build on the node's tip: a block found on the job before the last block lands
+    # would leave the chain, and on a slow host the pool can still be serving that job.
+    tip = node.chain.call("getblockcount")
+    wait_until(
+        lambda: (pool.portal.api("/api/v1/pool").json["chain"] or {}).get("tip_height") == tip,
+        10,
+        "the pool's work on the node's tip",
+    )
     miners = [Sv1Miner(port, f"{node.miner_address(n)}.rig") for n in others]
     finding = Sv1Miner(port, f"{node.miner_address(finder)}.rig")
     for miner, count in [*((miner, shares) for miner in miners), (finding, finder_shares)]:

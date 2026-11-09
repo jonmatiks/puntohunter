@@ -1,8 +1,8 @@
 # PuntoHunter
 
-## 0.2.0
+## [0.2.0] 2026-11-09
 
-The first public release of PuntoHunter's source. What it ships, by area:
+The first public release. What it ships, by area:
 
 * **Pools:** any number of solo, pooled, and hybrid pools side by side from one binary and your own Bitcoin
   Core node, each on its own Stratum ports, with its own finder part, fees, PPLNS window, and personal parts

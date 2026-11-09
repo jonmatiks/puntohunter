@@ -39,9 +39,9 @@ def test_the_conservation_report_balances_a_paid_run_and_names_a_planted_differe
     balanced = report(pool, "conservation")
     assert balanced.returncode == 0, balanced.stdout + balanced.stderr
     assert balanced.stdout.rstrip().endswith("balanced"), balanced.stdout
-    assert "2 blocks with a pool output, 2 on the chain" in balanced.stdout
-    assert f"batch {batch['id']}, confirmed {batch['txid']}: pays " in balanced.stdout
-    assert f"fee {batch['fee']} sats" in balanced.stdout
+    assert "2 blocks with a pool output, 2 on the chain" in balanced.stdout, balanced.stdout
+    assert f"batch {batch['id']}, confirmed {batch['txid']}: pays " in balanced.stdout, balanced.stdout
+    assert f"fee {batch['fee']} sats" in balanced.stdout, balanced.stdout
 
     # A copy of the database, one pooled allocation a satoshi larger than its block's coinbase allows.
     copy = tmp_path / "planted.sqlite3"
