@@ -69,7 +69,8 @@ src/
   404.html         what a host shows for a path that names no file
   partials/        what every page includes: head, header, outage banner, footer;
                    and the hooks a site fills, empty here: intro, about, nav-extra
-  app.css          the styles; the colour tokens at the top are the brand
+  brand.css        the brand colour tokens for dark and light themes
+  app.css          shared layout and controls
   js/bind.js       fills a page's HTML from the API's data
   js/common.js     what every page runs: theme button, "My fleet", health, footer
   js/api.js        every call to the pool: fetch, errors, live streams
@@ -223,6 +224,10 @@ here:
   it reads while the pool cannot be reached.
 * `partials/about.html`: below the overview, likewise.
 * `partials/nav-extra.html`: links at the end of the header's nav.
+* `partials/footer-extra.html`: extra footer content, preserving the shared disclaimer and credits.
+
+`brand.css` loads before `app.css`; an overlay replaces the theme tokens while keeping shared layout
+and controls. Accent-filled buttons and selected tabs use `--bg` for readable labels in both themes.
 
 An empty partial leaves no trace, so a build that fills none of them writes
 the same pages as one before the hooks.
@@ -276,8 +281,8 @@ The pages call the pool's API in one of two ways:
 
 ## Rebranding
 
-Change `name` and `description` in `site.json`, the colour tokens at the top
-of `src/app.css`, and `src/logo.png`. To keep them out of `web/`, put them in
+Change `name` and `description` in `site.json`, the colour tokens in
+`src/brand.css`, and `src/logo.png`. To keep them out of `web/`, put them in
 an overlay ([A Site Built on This One](#a-site-built-on-this-one)), which the
 pool's own portal takes too ([Served by the Pool](#served-by-the-pool)).
 

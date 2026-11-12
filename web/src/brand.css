@@ -1,0 +1,43 @@
+/* Mobile-first: one column, widening on larger screens. The colour tokens are the brand: replace this file in an overlay to
+   rebrand the app. Dark by default; the header's theme button saves light, or auto to follow the system, which
+   theme.js sets as data-theme on the root before the page paints. */
+:root {
+  --bg: #141412;
+  --fg: #ecece6;
+  --muted: #a3a39c;
+  --card: #1e1e1b;
+  --border: #33332f;
+  --accent: #fb923c;
+  --good: #4ade80;
+  --warn: #fbbf24;
+  --radius: 0.5rem;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #fafaf7;
+  --fg: #1d1d1b;
+  --muted: #6b6b66;
+  --card: #ffffff;
+  --border: #e2e2dc;
+  --accent: #c2410c;
+  --good: #15803d;
+  --warn: #b45309;
+  color-scheme: light;
+}
+
+:root[data-theme="auto"] { color-scheme: light dark; }
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme="auto"] {
+    --bg: #fafaf7;
+    --fg: #1d1d1b;
+    --muted: #6b6b66;
+    --card: #ffffff;
+    --border: #e2e2dc;
+    --accent: #c2410c;
+    --good: #15803d;
+    --warn: #b45309;
+  }
+}
+

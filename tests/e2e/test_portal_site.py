@@ -76,7 +76,10 @@ def test_a_branded_site_is_the_one_build_py_writes_for_it(pool_factory, tmp_path
     (overlay / "partials").mkdir(parents=True)
     (overlay / "data").mkdir()
     (overlay / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n" + bytes(range(256)))
-    (overlay / "app.css").write_text(":root { --accent: #c0ffee; }\n")
+    (overlay / "brand.css").write_text(":root { --accent: #c0ffee; }\n")
+    (overlay / "partials" / "footer-extra.html").write_text(
+        '<p class="operator">Operated by {{name}}.</p>\n'
+    )
     (overlay / "partials" / "intro.html").write_text('<p class="intro">Welcome to {{name}}.</p>\n')
     (overlay / "about-us.html").write_text(
         "<!doctype html>\n<html>\n<head>\n<!--#include head.html -->\n<title>About · {{name}}</title>\n"
@@ -88,6 +91,10 @@ def test_a_branded_site_is_the_one_build_py_writes_for_it(pool_factory, tmp_path
     assert_serves(pool, files)
     index = files["index.html"].decode()
     assert "<title>Home of a pool</title>" in index
+    assert files["brand.css"] == b":root { --accent: #c0ffee; }\n"
+    assert index.index('href="/brand.css"') < index.index('href="/app.css"')
+    assert '<p class="operator">Operated by Pool &amp; &quot;Co&quot;.</p>' in index
+    assert index.count('class="disclaimer"') == 1
     assert '<p class="intro">Welcome to Pool &amp; &quot;Co&quot;.</p>' in index
     assert '<link rel="canonical" href="https://pool.example.com/">' in index
     assert "api.example.com" not in index and "api.example.com" not in files["config.js"].decode()

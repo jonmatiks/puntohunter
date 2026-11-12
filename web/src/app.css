@@ -1,46 +1,4 @@
-/* Mobile-first: one column, widening on larger screens. The colour tokens are the brand: change them to
-   rebrand the app. Dark by default; the header's theme button saves light, or auto to follow the system, which
-   theme.js sets as data-theme on the root before the page paints. */
-:root {
-  --bg: #141412;
-  --fg: #ecece6;
-  --muted: #a3a39c;
-  --card: #1e1e1b;
-  --border: #33332f;
-  --accent: #fb923c;
-  --good: #4ade80;
-  --warn: #fbbf24;
-  --radius: 0.5rem;
-  color-scheme: dark;
-}
-
-:root[data-theme="light"] {
-  --bg: #fafaf7;
-  --fg: #1d1d1b;
-  --muted: #6b6b66;
-  --card: #ffffff;
-  --border: #e2e2dc;
-  --accent: #c2410c;
-  --good: #15803d;
-  --warn: #b45309;
-  color-scheme: light;
-}
-
-:root[data-theme="auto"] { color-scheme: light dark; }
-
-@media (prefers-color-scheme: light) {
-  :root[data-theme="auto"] {
-    --bg: #fafaf7;
-    --fg: #1d1d1b;
-    --muted: #6b6b66;
-    --card: #ffffff;
-    --border: #e2e2dc;
-    --accent: #c2410c;
-    --good: #15803d;
-    --warn: #b45309;
-  }
-}
-
+/* Layout and controls shared by every brand. Colour tokens come from brand.css. */
 * { box-sizing: border-box; }
 /* hidden always hides, even an element whose class gives it a display of its own. */
 [hidden] { display: none !important; }
@@ -154,7 +112,7 @@ button {
   border: 0;
   border-radius: var(--radius);
   background: var(--accent);
-  color: #fff;
+  color: var(--bg);
   cursor: pointer;
 }
 button:disabled { opacity: 0.6; cursor: wait; }
@@ -174,7 +132,7 @@ button.link { padding: 0; background: none; color: var(--accent); text-decoratio
 .settings dd { min-width: 0; }
 
 .tabs { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
-.tabs button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tabs button[aria-pressed="true"] { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
 .online { color: var(--good); }
 .idle { color: var(--warn); }

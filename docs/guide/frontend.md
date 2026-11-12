@@ -109,7 +109,7 @@ canonical link.
 Paths here are in `web/`.
 
 * **Rebrand:** change `name` and `description` in `site.json`, the colour tokens at the top of
-  `src/app.css`, for the dark theme and the light one, and `src/logo.png`, or put them in a site of
+  `src/brand.css`, for the dark theme and the light one, and `src/logo.png`, or put them in a site of
   your own (below), which the pool's `[portal] site` and `overlay` read too.
 * **Wording and layout:** each page's HTML holds all its markup and text, and its module in
   `src/js/pages/` only reads the API and fills it in. An element names the value it shows with
