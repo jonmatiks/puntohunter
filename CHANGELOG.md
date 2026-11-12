@@ -2,9 +2,10 @@
 
 ## Unreleased
 
+## [0.2.1] 2026-11-13
+
 * fix: readable text on accent-filled buttons and selected tabs in dark and light themes
 * feat: site overlays can replace `brand.css` and add footer content without copying shared styles or credits
-
 * docs: from a run of the guide on a clean Ubuntu 24.04: the installation page gives the commands for trying
   the pool on regtest, its Python environment included, and both it and the development page say that a CPU
   miner needs a lower `[vardiff] floor` than the regtest config's 1.0. The development page says how to get
