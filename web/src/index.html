@@ -9,6 +9,7 @@
 <!--#include header.html -->
 <main>
 <!--#include outage.html -->
+<blockquote class="motto">…hope is a good thing, maybe the best of things, and no good thing ever dies.</blockquote>
 <!--#include intro.html -->
 
 <!-- The overview: the username lookup, the pool's statistics, refreshed every 30 s, each pool's setup, the
@@ -26,8 +27,6 @@
 </div>
 
 <div data-state="ready" hidden>
-  <blockquote class="motto">…hope is a good thing, maybe the best of things, and no good thing ever dies.</blockquote>
-
   <!-- The lookup: a full username opens its address's fleet, the private one with its fleet password. Both go to
        the pool by POST, never in a URL. -->
   <section class="card">
@@ -92,7 +91,7 @@
     <div class="scroll" data-if="members">
       <table>
         <thead>
-          <tr><th>Instance</th><th>Hashrate</th><th>Connected</th><th>Blocks found</th></tr>
+          <tr><th>Region</th><th>Hashrate</th><th>Connected</th><th>Blocks found</th></tr>
         </thead>
         <tbody data-each="members">
           <template>

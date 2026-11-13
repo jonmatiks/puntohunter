@@ -59,6 +59,12 @@ site needs no rewrite rule for it, and never learns which fleet anyone opens.
 Every page shows a banner while the pool's health check says miners get no
 work.
 
+The overview's quote appears above the introduction, including while the API
+is loading or unavailable. The lookup gives the username a full-width row,
+with the optional fleet password and button below; narrow screens stack those
+controls. When group members are shown, the table labels their public names
+under "Region".
+
 ## Layout
 
 Paths in this README are relative to `web/`.

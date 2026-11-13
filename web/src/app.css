@@ -106,6 +106,20 @@ input[type="text"], input[type="password"] {
   background: var(--bg);
   color: var(--fg);
 }
+/* Give a full mining username its own row; keep the optional password and action together. */
+#lookup-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+#lookup-form input[name="username"] {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+#lookup-form input[name="password"] { width: 100%; }
+@media (max-width: 30rem) {
+  #lookup-form { grid-template-columns: minmax(0, 1fr); }
+}
+
 button {
   padding: 0.5rem 1rem;
   font: inherit;
