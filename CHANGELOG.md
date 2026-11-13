@@ -4,6 +4,10 @@
 
 ## [0.2.1] 2026-11-13
 
+* fix: the portal lookup gives the username the full card width, with password and button below and
+  stacked controls on phones
+* fix: show the overview's quote above the introduction while statistics load, and label the group
+  member column Region
 * fix: readable text on accent-filled buttons and selected tabs in dark and light themes
 * feat: site overlays can replace `brand.css` and add footer content without copying shared styles or credits
 * docs: from a run of the guide on a clean Ubuntu 24.04: the installation page gives the commands for trying
